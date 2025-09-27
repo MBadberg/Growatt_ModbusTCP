@@ -54,6 +54,13 @@ class GrowattData:
     ac_power: float = 0.0             # W
     ac_frequency: float = 0.0         # Hz
     
+    # Grid/Meter Data (when smart meter connected)
+    grid_power: float = 0.0           # W (+export, -import)
+    grid_voltage: float = 0.0         # V
+    grid_current: float = 0.0         # A  
+    grid_frequency: float = 0.0       # Hz
+    load_power: float = 0.0           # W (house consumption)
+    
     # Energy & Status
     energy_today: float = 0.0         # kWh
     energy_total: float = 0.0         # kWh
@@ -81,6 +88,17 @@ class GrowattData:
                 'current': self.ac_current,
                 'power': self.ac_power,
                 'frequency': self.ac_frequency
+            },
+            'grid': {
+                'power': self.grid_power,          # +export, -import
+                'voltage': self.grid_voltage,
+                'current': self.grid_current,
+                'frequency': self.grid_frequency,
+                'export_power': max(0, self.grid_power),   # Only positive values
+                'import_power': abs(min(0, self.grid_power)) # Only negative values (as positive)
+            },
+            'load': {
+                'power': self.load_power  # House consumption
             },
             'energy': {
                 'today_kwh': self.energy_today,
@@ -115,6 +133,13 @@ class GrowattModbus:
         3017: {'name': 'temperature', 'scale': 0.1, 'unit': '°C'},
         3026: {'name': 'energy_today', 'scale': 0.1, 'unit': 'kWh'},
         3028: {'name': 'energy_total', 'scale': 0.1, 'unit': 'kWh'},  # 32-bit value
+        
+        # Smart Meter registers (available when meter connected)
+        3046: {'name': 'grid_power', 'scale': 0.1, 'unit': 'W'},  # +export, -import
+        3047: {'name': 'grid_voltage', 'scale': 0.1, 'unit': 'V'},
+        3048: {'name': 'grid_current', 'scale': 0.1, 'unit': 'A'},
+        3049: {'name': 'grid_frequency', 'scale': 0.01, 'unit': 'Hz'},
+        3050: {'name': 'load_power', 'scale': 0.1, 'unit': 'W'},  # House consumption
     }
     
     # Holding registers (Function 03) - Configuration/device info
@@ -234,8 +259,8 @@ class GrowattModbus:
         """Read all relevant data from inverter"""
         data = GrowattData()
         
-        # Read main input registers block (3000-3030)
-        registers = self.read_input_registers(3000, 31)
+        # Read main input registers block (3000-3050 to include meter data)
+        registers = self.read_input_registers(3000, 51)
         if registers is None:
             logger.error("Failed to read input registers")
             return None
@@ -261,6 +286,21 @@ class GrowattModbus:
             if len(registers) > 28:
                 energy_total_raw = (registers[28] << 16) | registers[29]  # 3028-3029
                 data.energy_total = energy_total_raw * 0.1
+            
+            # Grid/Meter data (available when smart meter connected)
+            if len(registers) > 50:
+                # Check if we have valid meter data (non-zero values suggest meter is connected)
+                grid_power_raw = registers[46]  # 3046
+                if grid_power_raw != 0 or registers[47] != 0:  # 3047 (grid voltage)
+                    # Convert signed 16-bit values for power (can be negative for import)
+                    data.grid_power = self._to_signed_16bit(grid_power_raw) * 0.1
+                    data.grid_voltage = registers[47] * 0.1  # 3047
+                    data.grid_current = self._to_signed_16bit(registers[48]) * 0.1  # 3048
+                    data.grid_frequency = registers[49] * 0.01  # 3049
+                    data.load_power = registers[50] * 0.1  # 3050
+                    logger.debug(f"Grid data available: {data.grid_power}W, Load: {data.load_power}W")
+                else:
+                    logger.debug("No smart meter data detected")
             
         except (IndexError, TypeError) as e:
             logger.error(f"Error parsing input registers: {e}")
@@ -294,6 +334,12 @@ class GrowattModbus:
                 logger.warning(f"Error reading device info: {e}")
         
         return data
+    
+    def _to_signed_16bit(self, value: int) -> int:
+        """Convert unsigned 16-bit to signed 16-bit for power values that can be negative"""
+        if value > 32767:
+            return value - 65536
+        return value
 
     def get_status_text(self, status_code: int) -> str:
         """Convert status code to human readable text"""
@@ -347,6 +393,39 @@ def main():
             print(f"  Current: {data.ac_current:.1f}A") 
             print(f"  Power: {data.ac_power:.0f}W")
             print(f"  Frequency: {data.ac_frequency:.2f}Hz")
+            
+            # Show grid data if available (smart meter connected)
+            if data.grid_power != 0 or data.grid_voltage != 0:
+                print("\nGRID (Smart Meter):")
+                print(f"  Power: {data.grid_power:.0f}W", end="")
+                if data.grid_power > 0:
+                    print(" (EXPORTING)")
+                elif data.grid_power < 0:
+                    print(" (IMPORTING)")
+                else:
+                    print(" (BALANCED)")
+                print(f"  Voltage: {data.grid_voltage:.1f}V")
+                print(f"  Current: {data.grid_current:.1f}A")
+                print(f"  Frequency: {data.grid_frequency:.2f}Hz")
+                print(f"\nLOAD:")
+                print(f"  House Consumption: {data.load_power:.0f}W")
+                
+                # Energy balance calculation
+                print(f"\nENERGY FLOW:")
+                print(f"  Solar Production: {data.pv_total_power:.0f}W")
+                print(f"  House Consumption: {data.load_power:.0f}W")
+                if data.grid_power > 0:
+                    print(f"  Grid Export: {data.grid_power:.0f}W")
+                    print(f"  Self Consumption: {data.pv_total_power - data.grid_power:.0f}W")
+                elif data.grid_power < 0:
+                    print(f"  Grid Import: {abs(data.grid_power):.0f}W")
+                    print(f"  Self Consumption: {data.pv_total_power:.0f}W")
+                else:
+                    print(f"  Self Consumption: {data.pv_total_power:.0f}W")
+            else:
+                print("\nGRID: No smart meter detected")
+                print("  (Only inverter AC output available)")
+            
             print("\nENERGY:")
             print(f"  Today: {data.energy_today:.1f} kWh")
             print(f"  Total: {data.energy_total:.1f} kWh")
