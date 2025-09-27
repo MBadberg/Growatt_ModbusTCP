@@ -20,14 +20,24 @@ import json
 try:
     # For RS485-to-USB connection
     import serial
-    from pymodbus.client.sync import ModbusSerialClient as ModbusClient
+    # Try new import style first (pymodbus 3.x+)
+    try:
+        from pymodbus.client import ModbusSerialClient as ModbusClient
+    except ImportError:
+        # Fall back to old import style (pymodbus 2.x)
+        from pymodbus.client.sync import ModbusSerialClient as ModbusClient
     SERIAL_AVAILABLE = True
 except ImportError:
     SERIAL_AVAILABLE = False
 
 try:
     # For RS485-to-TCP connection (like EW11)
-    from pymodbus.client.sync import ModbusTcpClient
+    # Try new import style first (pymodbus 3.x+)
+    try:
+        from pymodbus.client import ModbusTcpClient
+    except ImportError:
+        # Fall back to old import style (pymodbus 2.x)
+        from pymodbus.client.sync import ModbusTcpClient
     TCP_AVAILABLE = True
 except ImportError:
     TCP_AVAILABLE = False
@@ -175,21 +185,43 @@ class GrowattModbus:
         if connection_type == 'tcp':
             if not TCP_AVAILABLE:
                 raise ImportError("pymodbus not available for TCP connection")
-            self.client = ModbusTcpClient(host, port)
+            
+            # Handle different pymodbus versions for TCP client
+            try:
+                # New style (pymodbus 3.x+) - requires keyword arguments
+                self.client = ModbusTcpClient(host=host, port=port)
+            except TypeError:
+                # Old style (pymodbus 2.x) - accepts positional arguments
+                self.client = ModbusTcpClient(host, port)
+            
             logger.info(f"Connecting to Growatt via TCP: {host}:{port}")
             
         elif connection_type == 'serial':
             if not SERIAL_AVAILABLE:
                 raise ImportError("pymodbus and/or pyserial not available for serial connection")
-            self.client = ModbusClient(
-                method='rtu',
-                port=device,
-                baudrate=baudrate,
-                timeout=3,
-                parity='N',
-                stopbits=1,
-                bytesize=8
-            )
+            
+            # Handle different pymodbus versions
+            try:
+                # New style (pymodbus 3.x+)
+                self.client = ModbusClient(
+                    port=device,
+                    baudrate=baudrate,
+                    timeout=3,
+                    parity='N',
+                    stopbits=1,
+                    bytesize=8
+                )
+            except TypeError:
+                # Old style (pymodbus 2.x)
+                self.client = ModbusClient(
+                    method='rtu',
+                    port=device,
+                    baudrate=baudrate,
+                    timeout=3,
+                    parity='N',
+                    stopbits=1,
+                    bytesize=8
+                )
             logger.info(f"Connecting to Growatt via Serial: {device} @ {baudrate} baud")
         else:
             raise ValueError("connection_type must be 'tcp' or 'serial'")
@@ -228,12 +260,36 @@ class GrowattModbus:
         self._enforce_read_interval()
         
         try:
-            response = self.client.read_input_registers(
-                start_address, count, unit=self.slave_id
-            )
-            if response.isError():
-                logger.error(f"Modbus error reading input registers {start_address}-{start_address+count-1}: {response}")
+            # Try new parameter name first (device_id), then fall back to old (slave)
+            try:
+                response = self.client.read_input_registers(
+                    address=start_address, count=count, device_id=self.slave_id
+                )
+            except TypeError:
+                # Fall back to older parameter names
+                response = self.client.read_input_registers(
+                    start_address, count, slave=self.slave_id
+                )
+            
+            # Handle different pymodbus versions for error checking
+            if hasattr(response, 'isError'):
+                # Old version (2.x)
+                if response.isError():
+                    logger.error(f"Modbus error reading input registers {start_address}-{start_address+count-1}: {response}")
+                    return None
+            elif hasattr(response, 'is_error'):
+                # New version (3.x)
+                if response.is_error():
+                    logger.error(f"Modbus error reading input registers {start_address}-{start_address+count-1}: {response}")
+                    return None
+            elif hasattr(response, 'registers'):
+                # Success - has registers attribute
+                pass
+            else:
+                # Unknown response type
+                logger.error(f"Unknown response type: {type(response)}")
                 return None
+                
             return response.registers
         except Exception as e:
             logger.error(f"Exception reading input registers: {e}")
@@ -244,12 +300,36 @@ class GrowattModbus:
         self._enforce_read_interval()
         
         try:
-            response = self.client.read_holding_registers(
-                start_address, count, unit=self.slave_id
-            )
-            if response.isError():
-                logger.error(f"Modbus error reading holding registers {start_address}-{start_address+count-1}: {response}")
+            # Try new parameter name first (device_id), then fall back to old (slave)
+            try:
+                response = self.client.read_holding_registers(
+                    address=start_address, count=count, device_id=self.slave_id
+                )
+            except TypeError:
+                # Fall back to older parameter names
+                response = self.client.read_holding_registers(
+                    start_address, count, slave=self.slave_id
+                )
+            
+            # Handle different pymodbus versions for error checking
+            if hasattr(response, 'isError'):
+                # Old version (2.x)
+                if response.isError():
+                    logger.error(f"Modbus error reading holding registers {start_address}-{start_address+count-1}: {response}")
+                    return None
+            elif hasattr(response, 'is_error'):
+                # New version (3.x)
+                if response.is_error():
+                    logger.error(f"Modbus error reading holding registers {start_address}-{start_address+count-1}: {response}")
+                    return None
+            elif hasattr(response, 'registers'):
+                # Success - has registers attribute
+                pass
+            else:
+                # Unknown response type
+                logger.error(f"Unknown response type: {type(response)}")
                 return None
+                
             return response.registers
         except Exception as e:
             logger.error(f"Exception reading holding registers: {e}")
@@ -353,6 +433,8 @@ class GrowattModbus:
 
 def main():
     """Example usage"""
+    import sys
+    
     # Configuration - adjust for your setup
     CONFIG = {
         'connection_type': 'tcp',  # or 'serial'
@@ -362,6 +444,32 @@ def main():
         'baudrate': 9600,
         'slave_id': 1
     }
+    
+    # Handle command line arguments
+    if len(sys.argv) >= 2:
+        CONFIG['host'] = sys.argv[1]
+        logger.info(f"Using command line host: {CONFIG['host']}")
+    
+    if len(sys.argv) >= 3:
+        try:
+            CONFIG['port'] = int(sys.argv[2])
+            logger.info(f"Using command line port: {CONFIG['port']}")
+        except ValueError:
+            logger.error(f"Invalid port number: {sys.argv[2]}")
+            return
+    
+    if len(sys.argv) >= 4:
+        try:
+            CONFIG['slave_id'] = int(sys.argv[3])
+            logger.info(f"Using command line slave ID: {CONFIG['slave_id']}")
+        except ValueError:
+            logger.error(f"Invalid slave ID: {sys.argv[3]}")
+            return
+    
+    # Print usage info
+    if len(sys.argv) == 1:
+        print("Usage: python growatt.py [host] [port] [slave_id]")
+        print(f"Using defaults: {CONFIG['host']}:{CONFIG['port']}, slave_id={CONFIG['slave_id']}")
     
     # Create and connect to inverter
     inverter = GrowattModbus(**CONFIG)
