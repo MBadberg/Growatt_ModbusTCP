@@ -1,0 +1,16 @@
+{
+  "domain": "growatt_modbus",
+  "name": "Growatt Modbus Integration",
+  "documentation": "https://github.com/0xAHA/Growatt_ModbusTCP",
+  "issue_tracker": "https://github.com/0xAHA/Growatt_ModbusTCP/issues",
+  "codeowners": ["@0xAHA"],
+  "config_flow": true,
+  "dependencies": [],
+  "requirements": [
+    "pymodbus>=3.0.0",
+    "pyserial>=3.4"
+  ],
+  "iot_class": "local_polling",
+  "version": "0.0.1",
+  "integration_type": "device"
+}

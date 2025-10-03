@@ -1,0 +1,73 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Growatt Modbus Setup",
+        "description": "Configure your Growatt inverter connection. Choose between TCP (Ethernet/WiFi adapter like EW11) or Serial (USB-to-RS485 adapter).",
+        "data": {
+          "name": "Integration Name",
+          "connection_type": "Connection Type"
+        },
+        "data_description": {
+          "name": "Friendly name for this inverter",
+          "connection_type": "How to connect to your inverter"
+        }
+      },
+      "tcp": {
+        "title": "TCP Connection Settings",
+        "description": "Configure TCP connection to your RS485-to-Ethernet/WiFi adapter (EW11, USR-W630, etc.)",
+        "data": {
+          "host": "IP Address",
+          "port": "Port",
+          "slave_id": "Modbus Slave ID",
+          "register_map": "Register Map"
+        },
+        "data_description": {
+          "host": "IP address of your RS485-to-TCP converter",
+          "port": "Modbus TCP port (usually 502)",
+          "slave_id": "Inverter Modbus address (usually 1)",
+          "register_map": "Register mapping for your inverter model"
+        }
+      },
+      "serial": {
+        "title": "Serial Connection Settings", 
+        "description": "Configure serial connection to your USB-to-RS485 adapter",
+        "data": {
+          "device_path": "Device Path",
+          "baudrate": "Baud Rate",
+          "slave_id": "Modbus Slave ID",
+          "register_map": "Register Map"
+        },
+        "data_description": {
+          "device_path": "Serial device path (e.g., /dev/ttyUSB0 or COM3)",
+          "baudrate": "Serial communication speed (usually 9600)",
+          "slave_id": "Inverter Modbus address (usually 1)",
+          "register_map": "Register mapping for your inverter model"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to inverter. Check your connection settings and wiring.",
+      "unknown": "Unexpected error occurred during setup."
+    },
+    "abort": {
+      "already_configured": "This inverter is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Growatt Modbus Options",
+        "description": "Configure polling and timeout settings",
+        "data": {
+          "scan_interval": "Scan Interval (seconds)",
+          "timeout": "Connection Timeout (seconds)"
+        },
+        "data_description": {
+          "scan_interval": "How often to poll the inverter for new data",
+          "timeout": "How long to wait for responses from the inverter"
+        }
+      }
+    }
+  }
+}

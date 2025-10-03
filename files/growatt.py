@@ -1,10 +1,23 @@
 #!/usr/bin/env python3
 """
-Growatt MIN-10000 Modbus Reader
+Growatt MIN-10000 Modbus Reader v1.4
 Home Assistant Integration Base Script
 
 This script reads data from Growatt MIN series inverters via RS485 Modbus.
 Based on Growatt Modbus RTU Protocol documentation.
+
+REQUIREMENTS:
+- Python 3.7+
+- pymodbus (pip install pymodbus)
+- pyserial (pip install pyserial) 
+- const.py (register definitions file)
+
+CHANGELOG:
+- v1.4: Moved register definitions to const.py, fixed MIN-10000 PV2 mapping
+- v1.3: Added intelligent power register fallback (register → calculation)
+- v1.2: Added smart meter support and improved error handling  
+- v1.1: Added pymodbus version compatibility
+- v1.0: Initial release
 
 Hardware Setup:
 - Connect RS485-to-USB/TCP converter to inverter SYS COM port pins 3&4
@@ -16,6 +29,14 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
 import json
+
+# Import register definitions
+try:
+    from const import REGISTER_MAPS, STATUS_CODES
+except ImportError:
+    print("❌ const.py not found! Please ensure const.py is in the same directory.")
+    print("   Download it from the same location as this script.")
+    exit(1)
 
 try:
     # For RS485-to-USB connection
@@ -57,6 +78,10 @@ class GrowattData:
     pv2_current: float = 0.0          # A
     pv2_power: float = 0.0            # W
     pv_total_power: float = 0.0       # W
+    
+    # Power calculation methods (for debugging)
+    pv1_method: str = "unknown"       # "register" or "calculated"
+    pv2_method: str = "unknown"       # "register" or "calculated"
     
     # AC Output
     ac_voltage: float = 0.0           # V
@@ -125,46 +150,9 @@ class GrowattData:
 class GrowattModbus:
     """Growatt MIN series Modbus client"""
     
-    # Register mappings for MIN series (TL-X type)
-    # Input registers (Function 04) - Real-time data
-    INPUT_REGISTERS = {
-        3000: {'name': 'inverter_status', 'scale': 1, 'unit': ''},
-        3001: {'name': 'pv_total_power', 'scale': 0.1, 'unit': 'W'},
-        3003: {'name': 'pv1_voltage', 'scale': 0.1, 'unit': 'V'},
-        3004: {'name': 'pv1_current', 'scale': 0.1, 'unit': 'A'},
-        3005: {'name': 'pv1_power', 'scale': 0.1, 'unit': 'W'},
-        3006: {'name': 'pv2_voltage', 'scale': 0.1, 'unit': 'V'},
-        3007: {'name': 'pv2_current', 'scale': 0.1, 'unit': 'A'},
-        3008: {'name': 'pv2_power', 'scale': 0.1, 'unit': 'W'},
-        3011: {'name': 'ac_power', 'scale': 0.1, 'unit': 'W'},
-        3012: {'name': 'ac_frequency', 'scale': 0.01, 'unit': 'Hz'},
-        3013: {'name': 'ac_voltage', 'scale': 0.1, 'unit': 'V'},
-        3014: {'name': 'ac_current', 'scale': 0.1, 'unit': 'A'},
-        3017: {'name': 'temperature', 'scale': 0.1, 'unit': '°C'},
-        3026: {'name': 'energy_today', 'scale': 0.1, 'unit': 'kWh'},
-        3028: {'name': 'energy_total', 'scale': 0.1, 'unit': 'kWh'},  # 32-bit value
-        
-        # Smart Meter registers (available when meter connected)
-        3046: {'name': 'grid_power', 'scale': 0.1, 'unit': 'W'},  # +export, -import
-        3047: {'name': 'grid_voltage', 'scale': 0.1, 'unit': 'V'},
-        3048: {'name': 'grid_current', 'scale': 0.1, 'unit': 'A'},
-        3049: {'name': 'grid_frequency', 'scale': 0.01, 'unit': 'Hz'},
-        3050: {'name': 'load_power', 'scale': 0.1, 'unit': 'W'},  # House consumption
-    }
-    
-    # Holding registers (Function 03) - Configuration/device info
-    HOLDING_REGISTERS = {
-        0: {'name': 'safety_func_en', 'scale': 1, 'unit': ''},
-        3: {'name': 'firmware_version', 'scale': 1, 'unit': ''},
-        9: {'name': 'serial_number_1', 'scale': 1, 'unit': ''},
-        10: {'name': 'serial_number_2', 'scale': 1, 'unit': ''},
-        11: {'name': 'serial_number_3', 'scale': 1, 'unit': ''},
-        12: {'name': 'serial_number_4', 'scale': 1, 'unit': ''},
-        13: {'name': 'serial_number_5', 'scale': 1, 'unit': ''},
-    }
-    
     def __init__(self, connection_type='tcp', host='192.168.1.100', port=502, 
-                 device='/dev/ttyUSB0', baudrate=9600, slave_id=1):
+                 device='/dev/ttyUSB0', baudrate=9600, slave_id=1, 
+                 register_map='MIN_10000_VARIANT_A'):
         """
         Initialize Modbus connection
         
@@ -175,12 +163,21 @@ class GrowattModbus:
             device: Serial device path for USB connection
             baudrate: Serial baud rate (usually 9600)
             slave_id: Modbus slave ID (usually 1)
+            register_map: Which register mapping to use (see const.py)
         """
         self.connection_type = connection_type
         self.slave_id = slave_id
         self.client = None
         self.last_read_time = 0
         self.min_read_interval = 1.0  # 1 second minimum between reads
+        
+        # Load register map
+        if register_map not in REGISTER_MAPS:
+            raise ValueError(f"Unknown register map: {register_map}. Available: {list(REGISTER_MAPS.keys())}")
+        
+        self.register_map = REGISTER_MAPS[register_map]
+        self.register_map_name = register_map
+        logger.info(f"Using register map: {self.register_map['name']}")
         
         if connection_type == 'tcp':
             if not TCP_AVAILABLE:
@@ -334,7 +331,7 @@ class GrowattModbus:
         except Exception as e:
             logger.error(f"Exception reading holding registers: {e}")
             return None
-    
+
     def read_all_data(self) -> Optional[GrowattData]:
         """Read all relevant data from inverter"""
         data = GrowattData()
@@ -345,44 +342,104 @@ class GrowattModbus:
             logger.error("Failed to read input registers")
             return None
         
-        # Parse input register data
+        # Get register addresses from the loaded map
+        input_regs = self.register_map['input_registers']
+        
+        # Helper function to find register offset
+        def get_offset(address):
+            return address - 3000
+        
+        # Parse input register data using register map
         try:
-            data.status = registers[0]  # 3000
-            data.pv_total_power = registers[1] * 0.1  # 3001
-            data.pv1_voltage = registers[3] * 0.1  # 3003
-            data.pv1_current = registers[4] * 0.1  # 3004  
-            data.pv1_power = registers[5] * 0.1  # 3005
-            data.pv2_voltage = registers[6] * 0.1  # 3006
-            data.pv2_current = registers[7] * 0.1  # 3007
-            data.pv2_power = registers[8] * 0.1  # 3008
-            data.ac_power = registers[11] * 0.1  # 3011
-            data.ac_frequency = registers[12] * 0.01  # 3012
-            data.ac_voltage = registers[13] * 0.1  # 3013
-            data.ac_current = registers[14] * 0.1  # 3014
-            data.temperature = registers[17] * 0.1  # 3017
-            data.energy_today = registers[26] * 0.1  # 3026
+            
+            # PV1 data (standard location)
+            data.pv1_voltage = registers[get_offset(3003)] * input_regs[3003]['scale']  # 3003
+            data.pv1_current = registers[get_offset(3004)] * input_regs[3004]['scale']  # 3004  
+            
+            # PV1 Power with intelligent fallback
+            pv1_power_register = registers[get_offset(3005)] * input_regs[3005]['scale']  # 3005
+            pv1_power_calculated = data.pv1_voltage * data.pv1_current
+            pv1_used_register = False
+            
+            # Use register if it's non-zero and either calculated is zero OR they're close
+            if (pv1_power_register > 0 and 
+                (pv1_power_calculated == 0 or 
+                 abs(pv1_power_register - pv1_power_calculated) < max(1.0, pv1_power_calculated * 0.2))):
+                # Register value seems reasonable
+                data.pv1_power = pv1_power_register
+                pv1_used_register = True
+                logger.debug(f"Using PV1 power from register: {pv1_power_register:.1f}W")
+            else:
+                # Register is 0 or unreliable, use calculation
+                data.pv1_power = pv1_power_calculated
+                logger.debug(f"Using PV1 calculated power: {pv1_power_calculated:.1f}W (register was {pv1_power_register:.1f}W)")
+            
+            # PV2 data (using corrected mapping for MIN_10000_VARIANT_A)
+            if self.register_map_name == 'MIN_10000_VARIANT_A':
+                # For this variant: Power=3006, Voltage=3007, Current=3008
+                data.pv2_voltage = registers[get_offset(3007)] * input_regs[3007]['scale']  # 3007
+                data.pv2_current = registers[get_offset(3008)] * input_regs[3008]['scale']  # 3008
+                pv2_power_register = registers[get_offset(3006)] * input_regs[3006]['scale']  # 3006
+            else:
+                # Standard mapping: Voltage=3006, Current=3007, Power=3008
+                data.pv2_voltage = registers[get_offset(3006)] * input_regs[3006]['scale']  # 3006
+                data.pv2_current = registers[get_offset(3007)] * input_regs[3007]['scale']  # 3007
+                pv2_power_register = registers[get_offset(3008)] * input_regs[3008]['scale']  # 3008
+            
+            # PV2 Power with intelligent fallback
+            pv2_power_calculated = data.pv2_voltage * data.pv2_current
+            pv2_used_register = False
+            
+            if (pv2_power_register > 0 and 
+                (pv2_power_calculated == 0 or 
+                 abs(pv2_power_register - pv2_power_calculated) < max(1.0, pv2_power_calculated * 0.2))):
+                # Register value seems reasonable
+                data.pv2_power = pv2_power_register
+                pv2_used_register = True
+                logger.debug(f"Using PV2 power from register: {pv2_power_register:.1f}W")
+            else:
+                # Register is 0 or unreliable, use calculation  
+                data.pv2_power = pv2_power_calculated
+                logger.debug(f"Using PV2 calculated power: {pv2_power_calculated:.1f}W (register was {pv2_power_register:.1f}W)")
+            
+            # Status and total power
+            data.status = registers[get_offset(3000)]  # 3000
+            #data.pv_total_power = registers[get_offset(3001)] * input_regs[3001]['scale']  # 3001
+            data.pv_total_power = data.pv1_power + data.pv2_power  # Calculate total from PV1 and PV2
+
+            # Store method used for display
+            data.pv1_method = "register" if pv1_used_register else "calculated"
+            data.pv2_method = "register" if pv2_used_register else "calculated"
+            
+            # AC Output data
+            data.ac_power = registers[get_offset(3011)] * input_regs[3011]['scale']  # 3011
+            data.ac_frequency = registers[get_offset(3012)] * input_regs[3012]['scale']  # 3012
+            data.ac_voltage = registers[get_offset(3013)] * input_regs[3013]['scale']  # 3013
+            data.ac_current = registers[get_offset(3014)] * input_regs[3014]['scale']  # 3014
+            data.temperature = registers[get_offset(3017)] * input_regs[3017]['scale']  # 3017
+            data.energy_today = registers[get_offset(3026)] * input_regs[3026]['scale']  # 3026
             
             # Energy total is 32-bit value at 3028-3029
-            if len(registers) > 28:
-                energy_total_raw = (registers[28] << 16) | registers[29]  # 3028-3029
+            if len(registers) > get_offset(3029):
+                energy_total_raw = (registers[get_offset(3028)] << 16) | registers[get_offset(3029)]  # 3028-3029
                 data.energy_total = energy_total_raw * 0.1
             
             # Grid/Meter data (available when smart meter connected)
-            if len(registers) > 50:
+            if len(registers) > get_offset(3050):
                 # Check if we have valid meter data (non-zero values suggest meter is connected)
-                grid_power_raw = registers[46]  # 3046
-                if grid_power_raw != 0 or registers[47] != 0:  # 3047 (grid voltage)
+                grid_power_raw = registers[get_offset(3046)]  # 3046
+                if grid_power_raw != 0 or registers[get_offset(3047)] != 0:  # 3047 (grid voltage)
                     # Convert signed 16-bit values for power (can be negative for import)
-                    data.grid_power = self._to_signed_16bit(grid_power_raw) * 0.1
-                    data.grid_voltage = registers[47] * 0.1  # 3047
-                    data.grid_current = self._to_signed_16bit(registers[48]) * 0.1  # 3048
-                    data.grid_frequency = registers[49] * 0.01  # 3049
-                    data.load_power = registers[50] * 0.1  # 3050
+                    data.grid_power = self._to_signed_16bit(grid_power_raw) * input_regs[3046]['scale']
+                    data.grid_voltage = registers[get_offset(3047)] * input_regs[3047]['scale']  # 3047
+                    data.grid_current = self._to_signed_16bit(registers[get_offset(3048)]) * input_regs[3048]['scale']  # 3048
+                    data.grid_frequency = registers[get_offset(3049)] * input_regs[3049]['scale']  # 3049
+                    data.load_power = registers[get_offset(3050)] * input_regs[3050]['scale']  # 3050
                     logger.debug(f"Grid data available: {data.grid_power}W, Load: {data.load_power}W")
                 else:
                     logger.debug("No smart meter data detected")
             
-        except (IndexError, TypeError) as e:
+        except (IndexError, TypeError, KeyError) as e:
             logger.error(f"Error parsing input registers: {e}")
             return None
         
@@ -390,8 +447,10 @@ class GrowattModbus:
         holding_regs = self.read_holding_registers(0, 20)
         if holding_regs:
             try:
+                holding_map = self.register_map['holding_registers']
+                
                 # Firmware version at register 3
-                if len(holding_regs) > 3:
+                if len(holding_regs) > 3 and 3 in holding_map:
                     fw_version = holding_regs[3]
                     data.firmware_version = f"{fw_version >> 8}.{fw_version & 0xFF}"
                 
@@ -399,15 +458,16 @@ class GrowattModbus:
                 if len(holding_regs) > 13:
                     serial_parts = []
                     for i in range(9, 14):  # registers 9-13
-                        reg_val = holding_regs[i]
-                        # Convert 16-bit register to 2 ASCII characters
-                        if reg_val > 0:
-                            char1 = (reg_val >> 8) & 0xFF
-                            char2 = reg_val & 0xFF
-                            if char1 > 0:
-                                serial_parts.append(chr(char1))
-                            if char2 > 0:
-                                serial_parts.append(chr(char2))
+                        if i < len(holding_regs):
+                            reg_val = holding_regs[i]
+                            # Convert 16-bit register to 2 ASCII characters
+                            if reg_val > 0:
+                                char1 = (reg_val >> 8) & 0xFF
+                                char2 = reg_val & 0xFF
+                                if char1 > 0:
+                                    serial_parts.append(chr(char1))
+                                if char2 > 0:
+                                    serial_parts.append(chr(char2))
                     data.serial_number = ''.join(serial_parts).rstrip('\x00')
                     
             except Exception as e:
@@ -423,17 +483,26 @@ class GrowattModbus:
 
     def get_status_text(self, status_code: int) -> str:
         """Convert status code to human readable text"""
-        status_map = {
-            0: "Standby",
-            1: "Normal", 
-            2: "Fault",
-            3: "Permanent Fault"
-        }
-        return status_map.get(status_code, f"Unknown ({status_code})")
+        status_info = STATUS_CODES.get(status_code, {'name': f'Unknown ({status_code})', 'desc': 'Unknown status code'})
+        return status_info['name']
 
 def main():
     """Example usage"""
     import sys
+    
+    # Enable debug logging to see fallback decisions
+    logging.getLogger().setLevel(logging.DEBUG)
+    
+    # Check if const.py is available
+    try:
+        from const import REGISTER_MAPS
+    except ImportError:
+        print("❌ ERROR: const.py not found!")
+        print("📁 Required files:")
+        print("   - growatt.py (this file)")  
+        print("   - const.py (register definitions)")
+        print("\n💡 Make sure both files are in the same directory.")
+        return
     
     # Configuration - adjust for your setup
     CONFIG = {
@@ -442,7 +511,8 @@ def main():
         'port': 502,
         'device': '/dev/ttyUSB0',  # for serial connection
         'baudrate': 9600,
-        'slave_id': 1
+        'slave_id': 1,
+        'register_map': 'MIN_10000_VARIANT_A'  # Use corrected register mapping
     }
     
     # Handle command line arguments
@@ -470,6 +540,10 @@ def main():
     if len(sys.argv) == 1:
         print("Usage: python growatt.py [host] [port] [slave_id]")
         print(f"Using defaults: {CONFIG['host']}:{CONFIG['port']}, slave_id={CONFIG['slave_id']}")
+        print(f"Register map: {CONFIG['register_map']}")
+        print("\nAvailable register maps:")
+        for name, config in REGISTER_MAPS.items():
+            print(f"  - {name}: {config['name']}")
     
     # Create and connect to inverter
     inverter = GrowattModbus(**CONFIG)
@@ -488,14 +562,20 @@ def main():
             print("\n" + "="*50)
             print("GROWATT MIN-10000 STATUS")
             print("="*50)
+            print(f"Register Map: {inverter.register_map['name']}")
             print(f"Status: {inverter.get_status_text(data.status)}")
             print(f"Serial: {data.serial_number}")
             print(f"Firmware: {data.firmware_version}")
             print(f"Temperature: {data.temperature:.1f}°C")
+            
             print("\nSOLAR INPUT:")
-            print(f"  PV1: {data.pv1_voltage:.1f}V, {data.pv1_current:.1f}A, {data.pv1_power:.0f}W")
-            print(f"  PV2: {data.pv2_voltage:.1f}V, {data.pv2_current:.1f}A, {data.pv2_power:.0f}W")
+            pv1_icon = "📊" if data.pv1_method == "register" else "🧮"
+            pv2_icon = "📊" if data.pv2_method == "register" else "🧮"
+            
+            print(f"  PV1: {data.pv1_voltage:.1f}V, {data.pv1_current:.1f}A, {data.pv1_power:.0f}W {pv1_icon}")
+            print(f"  PV2: {data.pv2_voltage:.1f}V, {data.pv2_current:.1f}A, {data.pv2_power:.0f}W {pv2_icon}")
             print(f"  Total: {data.pv_total_power:.0f}W")
+            print(f"\n📊 = Register value  🧮 = Calculated (V×I)")
             print("\nAC OUTPUT:")
             print(f"  Voltage: {data.ac_voltage:.1f}V")
             print(f"  Current: {data.ac_current:.1f}A") 
