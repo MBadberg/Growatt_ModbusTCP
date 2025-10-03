@@ -12,6 +12,8 @@ from .coordinator import GrowattModbusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 

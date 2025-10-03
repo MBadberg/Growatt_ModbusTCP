@@ -1,5 +1,3 @@
-# Growatt Modbus Integration for Home Assistant
-
 # Growatt Modbus Integration for Home Assistant ☀️
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
