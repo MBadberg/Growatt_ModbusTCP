@@ -1,5 +1,6 @@
 """Sensor platform for Growatt Modbus Integration."""
 import logging
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -9,6 +10,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    PERCENTAGE,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
@@ -27,7 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 SENSOR_DEFINITIONS = {
-    # Solar Input Sensors
+    # Solar Input Sensors - PV1
     "pv1_voltage": {
         "name": "PV1 Voltage",
         "icon": "mdi:lightning-bolt",
@@ -52,6 +54,8 @@ SENSOR_DEFINITIONS = {
         "unit": UnitOfPower.WATT,
         "attr": "pv1_power",
     },
+    
+    # Solar Input Sensors - PV2
     "pv2_voltage": {
         "name": "PV2 Voltage",
         "icon": "mdi:lightning-bolt",
@@ -76,6 +80,37 @@ SENSOR_DEFINITIONS = {
         "unit": UnitOfPower.WATT,
         "attr": "pv2_power",
     },
+    
+    # Solar Input Sensors - PV3
+    "pv3_voltage": {
+        "name": "PV3 Voltage",
+        "icon": "mdi:lightning-bolt",
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfElectricPotential.VOLT,
+        "attr": "pv3_voltage",
+        "condition": lambda data: data.pv3_voltage > 0 or data.pv3_power > 0,
+    },
+    "pv3_current": {
+        "name": "PV3 Current",
+        "icon": "mdi:current-dc", 
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "attr": "pv3_current",
+        "condition": lambda data: data.pv3_voltage > 0 or data.pv3_power > 0,
+    },
+    "pv3_power": {
+        "name": "PV3 Power",
+        "icon": "mdi:solar-panel",
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfPower.WATT,
+        "attr": "pv3_power",
+        "condition": lambda data: data.pv3_voltage > 0 or data.pv3_power > 0,
+    },
+    
+    # Solar Total
     "pv_total_power": {
         "name": "Solar Total Power",
         "icon": "mdi:solar-power",
@@ -119,7 +154,33 @@ SENSOR_DEFINITIONS = {
         "attr": "ac_frequency",
     },
     
-    # Power Flow Sensors (storage/hybrid models or smart meter)
+    # Grid Power Sensors
+    "grid_power": {
+        "name": "Grid Power",
+        "icon": "mdi:transmission-tower",
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfPower.WATT,
+        "attr": "calculated",
+    },
+    "grid_export_power": {
+        "name": "Grid Export Power",
+        "icon": "mdi:transmission-tower-export",
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfPower.WATT,
+        "attr": "calculated",
+    },
+    "grid_import_power": {
+        "name": "Grid Import Power",
+        "icon": "mdi:transmission-tower-import", 
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfPower.WATT,
+        "attr": "calculated",
+    },
+    
+    # Power Flow Sensors (from registers - storage/hybrid models)
     "power_to_grid": {
         "name": "Power to Grid",
         "icon": "mdi:transmission-tower-export",
@@ -148,29 +209,20 @@ SENSOR_DEFINITIONS = {
         "condition": lambda data: data.power_to_user > 0,
     },
     
-    # Export/Import Split Sensors (calculated from power flow)
-    "grid_export_power": {
-        "name": "Grid Export Power",
-        "icon": "mdi:transmission-tower-export",
-        "device_class": SensorDeviceClass.POWER,
-        "state_class": SensorStateClass.MEASUREMENT,
-        "unit": UnitOfPower.WATT,
-        "attr": "calculated",
-    },
-    "grid_import_power": {
-        "name": "Grid Import Power",
-        "icon": "mdi:transmission-tower-import", 
-        "device_class": SensorDeviceClass.POWER,
-        "state_class": SensorStateClass.MEASUREMENT,
-        "unit": UnitOfPower.WATT,
-        "attr": "calculated",
-    },
+    # Consumption Sensors
     "self_consumption": {
         "name": "Self Consumption",
         "icon": "mdi:home-lightning-bolt-outline",
         "device_class": SensorDeviceClass.POWER,
         "state_class": SensorStateClass.MEASUREMENT,
         "unit": UnitOfPower.WATT,
+        "attr": "calculated",
+    },
+    "self_consumption_percentage": {
+        "name": "Self Consumption Percentage",
+        "icon": "mdi:percent",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": PERCENTAGE,
         "attr": "calculated",
     },
     "house_consumption": {
@@ -203,7 +255,7 @@ SENSOR_DEFINITIONS = {
     # Energy Breakdown (storage/hybrid models)
     "energy_to_grid_today": {
         "name": "Energy to Grid Today",
-        "icon": "mdi:transmission-tower",
+        "icon": "mdi:transmission-tower-export",
         "device_class": SensorDeviceClass.ENERGY,
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "unit": UnitOfEnergy.KILO_WATT_HOUR,
@@ -212,12 +264,30 @@ SENSOR_DEFINITIONS = {
     },
     "energy_to_grid_total": {
         "name": "Energy to Grid Total",
-        "icon": "mdi:transmission-tower",
+        "icon": "mdi:transmission-tower-export",
         "device_class": SensorDeviceClass.ENERGY,
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "unit": UnitOfEnergy.KILO_WATT_HOUR,
         "attr": "energy_to_grid_total",
         "condition": lambda data: data.energy_to_grid_total > 0,
+    },
+    "grid_import_energy_today": {
+        "name": "Grid Import Energy Today",
+        "icon": "mdi:transmission-tower-import",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "attr": "calculated",
+        "condition": lambda data: data.load_energy_today > 0,
+    },
+    "grid_import_energy_total": {
+        "name": "Grid Import Energy Total",
+        "icon": "mdi:transmission-tower-import",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "attr": "calculated",
+        "condition": lambda data: data.load_energy_total > 0,
     },
     "load_energy_today": {
         "name": "Load Energy Today",
@@ -271,6 +341,12 @@ SENSOR_DEFINITIONS = {
         "name": "Status",
         "icon": "mdi:information",
         "attr": "status",
+    },
+    "last_update": {
+        "name": "Last Update",
+        "icon": "mdi:clock-outline",
+        "device_class": SensorDeviceClass.TIMESTAMP,
+        "attr": "calculated",
     },
     "derating_mode": {
         "name": "Derating Mode",
@@ -376,63 +452,91 @@ class GrowattModbusSensor(CoordinatorEntity, SensorEntity):
         
         # Special handling for calculated sensors
         if self._sensor_def.get("attr") == "calculated":
-            if self._sensor_key == "grid_export_power":
-                # Export = power flowing TO grid (positive direction)
-                # Use power_to_grid if available (from official registers)
+            if self._sensor_key == "grid_power":
+                # Bidirectional grid power (signed value)
+                # Positive = export, Negative = import
+                export = getattr(data, "power_to_grid", 0)
+                solar = getattr(data, "pv_total_power", 0)
+                load = getattr(data, "power_to_load", 0)
+                
+                if export > 0:
+                    # We have export data from registers
+                    return round(export, 1)
+                elif load > 0 and solar > 0:
+                    # Calculate: positive if exporting, negative if importing
+                    grid = solar - load
+                    return round(grid, 1)
+                return 0
+                
+            elif self._sensor_key == "grid_export_power":
+                # Export power (always positive or 0)
                 export = getattr(data, "power_to_grid", 0)
                 return round(max(0, export), 1)
                 
             elif self._sensor_key == "grid_import_power":
-                # Import = power flowing FROM grid (when solar < load)
-                # Calculate as: house_consumption - solar_production (when positive)
+                # Import power (always positive or 0)
                 solar = getattr(data, "pv_total_power", 0)
                 load = getattr(data, "power_to_load", 0)
                 
-                # If load data not available, can't calculate import
                 if load == 0:
                     return 0
                 
-                # Import happens when load exceeds solar production
                 import_power = max(0, load - solar)
                 return round(import_power, 1)
                 
             elif self._sensor_key == "self_consumption":
-                # Self consumption = solar power used directly by house (not exported)
-                # = min(solar_production, house_load)
-                # OR = solar_production - grid_export
+                # Self consumption = solar used directly
                 solar = getattr(data, "pv_total_power", 0)
                 export = getattr(data, "power_to_grid", 0)
                 load = getattr(data, "power_to_load", 0)
                 
                 if export > 0:
-                    # We have export data, use it
                     self_consumption = solar - export
                 elif load > 0:
-                    # We have load data, use it
                     self_consumption = min(solar, load)
                 else:
-                    # No power flow data, assume all solar is self-consumed
                     self_consumption = solar
                 
                 return round(max(0, self_consumption), 1)
-                
-            elif self._sensor_key == "house_consumption":
-                # House consumption = total load
-                # Prefer power_to_load from official registers
+            
+            elif self._sensor_key == "self_consumption_percentage":
+                # Percentage of solar self-consumed
+                solar = getattr(data, "pv_total_power", 0)
+                export = getattr(data, "power_to_grid", 0)
                 load = getattr(data, "power_to_load", 0)
                 
-                # If not available, calculate as: solar + import - export
+                if solar == 0:
+                    return 0
+                
+                if export > 0:
+                    self_consumption = solar - export
+                elif load > 0:
+                    self_consumption = min(solar, load)
+                else:
+                    self_consumption = solar
+                
+                percentage = (max(0, self_consumption) / solar) * 100
+                return round(percentage, 1)
+                
+            elif self._sensor_key == "house_consumption":
+                # House consumption
+                load = getattr(data, "power_to_load", 0)
+                
                 if load == 0:
                     solar = getattr(data, "pv_total_power", 0)
                     export = getattr(data, "power_to_grid", 0)
-                    # For basic calculation: if exporting, load = solar - export
-                    # If importing, load = solar + import (but we don't have import directly)
                     if export > 0:
                         load = max(0, solar - export)
                     else:
                         load = solar
                 
                 return round(max(0, load), 1)
+            
+            elif self._sensor_key == "last_update":
+                # Last successful update timestamp
+                if self.coordinator.last_successful_update:
+                    return self.coordinator.last_successful_update
+                return None
             
             return None
         
@@ -441,10 +545,6 @@ class GrowattModbusSensor(CoordinatorEntity, SensorEntity):
         
         if value is None:
             return None
-        
-        # Apply transform function if defined
-        if "transform" in self._sensor_def:
-            value = self._sensor_def["transform"](value)
         
         # Special handling for status sensor
         if self._sensor_key == "status":
@@ -472,45 +572,5 @@ class GrowattModbusSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes."""
-        if self.coordinator.data is None:
-            return None
-        
-        attributes = {}
-        data = self.coordinator.data
-        
-        # Add last successful update time for status monitoring
-        if self.coordinator.last_successful_update:
-            attributes["last_successful_update"] = self.coordinator.last_successful_update.isoformat()
-        
-        # Add device information for main sensors
-        if self._sensor_key in ["pv_total_power", "ac_power", "status"]:
-            attributes.update({
-                "firmware_version": data.firmware_version,
-                "serial_number": data.serial_number,
-                "register_map": self.coordinator.config.get("register_map", "Unknown"),
-            })
-        
-        # Add power flow breakdown for export/import sensors
-        if self._sensor_key == "grid_export_power":
-            attributes["solar_production"] = round(getattr(data, "pv_total_power", 0), 1)
-            attributes["house_load"] = round(getattr(data, "power_to_load", 0), 1)
-            
-        elif self._sensor_key == "grid_import_power":
-            attributes["solar_production"] = round(getattr(data, "pv_total_power", 0), 1)
-            attributes["house_load"] = round(getattr(data, "power_to_load", 0), 1)
-            
-        elif self._sensor_key == "self_consumption":
-            solar = getattr(data, "pv_total_power", 0)
-            export = getattr(data, "power_to_grid", 0)
-            load = getattr(data, "power_to_load", 0)
-            
-            attributes["solar_production"] = round(solar, 1)
-            attributes["grid_export"] = round(export, 1)
-            attributes["house_load"] = round(load, 1)
-            
-            # Calculate percentage
-            if solar > 0:
-                self_consumption = max(0, solar - export) if export > 0 else min(solar, load)
-                attributes["self_consumption_percentage"] = round((self_consumption / solar) * 100, 1)
-        
-        return attributes if attributes else None
+        # No attributes on sensors - all info is in device_info or other sensors
+        return None

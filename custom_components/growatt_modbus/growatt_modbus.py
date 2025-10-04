@@ -62,6 +62,9 @@ class GrowattData:
     pv2_voltage: float = 0.0          # V
     pv2_current: float = 0.0          # A
     pv2_power: float = 0.0            # W
+    pv3_voltage: float = 0.0          # V
+    pv3_current: float = 0.0          # A
+    pv3_power: float = 0.0            # W
     pv_total_power: float = 0.0       # W
     
     # AC Output
@@ -401,37 +404,38 @@ class GrowattModbus:
             # PV String 1
             pv1_voltage_addr = self._find_register_by_name('pv1_voltage')
             pv1_current_addr = self._find_register_by_name('pv1_current')
-            pv1_power_addr = self._find_register_by_name('pv1_power')
+            pv1_power_low_addr = self._find_register_by_name('pv1_power_low')
             
             if pv1_voltage_addr:
                 data.pv1_voltage = self._get_register_value(pv1_voltage_addr) or 0.0
             if pv1_current_addr:
                 data.pv1_current = self._get_register_value(pv1_current_addr) or 0.0
-            if pv1_power_addr:
-                # For 32-bit power, read the LOW word (which has combined_scale)
-                pv1_power_low_addr = self._find_register_by_name('pv1_power_low')
-                if pv1_power_low_addr:
-                    data.pv1_power = self._get_register_value(pv1_power_low_addr) or 0.0
-                else:
-                    # Fallback for single register power
-                    data.pv1_power = self._get_register_value(pv1_power_addr) or 0.0
+            if pv1_power_low_addr:
+                data.pv1_power = self._get_register_value(pv1_power_low_addr) or 0.0
             
             # PV String 2
             pv2_voltage_addr = self._find_register_by_name('pv2_voltage')
             pv2_current_addr = self._find_register_by_name('pv2_current')
-            pv2_power_addr = self._find_register_by_name('pv2_power')
+            pv2_power_low_addr = self._find_register_by_name('pv2_power_low')
             
             if pv2_voltage_addr:
                 data.pv2_voltage = self._get_register_value(pv2_voltage_addr) or 0.0
             if pv2_current_addr:
                 data.pv2_current = self._get_register_value(pv2_current_addr) or 0.0
-            if pv2_power_addr:
-                # For 32-bit power, read the LOW word
-                pv2_power_low_addr = self._find_register_by_name('pv2_power_low')
-                if pv2_power_low_addr:
-                    data.pv2_power = self._get_register_value(pv2_power_low_addr) or 0.0
-                else:
-                    data.pv2_power = self._get_register_value(pv2_power_addr) or 0.0
+            if pv2_power_low_addr:
+                data.pv2_power = self._get_register_value(pv2_power_low_addr) or 0.0
+            
+            # PV String 3 (if available)
+            pv3_voltage_addr = self._find_register_by_name('pv3_voltage')
+            pv3_current_addr = self._find_register_by_name('pv3_current')
+            pv3_power_low_addr = self._find_register_by_name('pv3_power_low')
+            
+            if pv3_voltage_addr:
+                data.pv3_voltage = self._get_register_value(pv3_voltage_addr) or 0.0
+            if pv3_current_addr:
+                data.pv3_current = self._get_register_value(pv3_current_addr) or 0.0
+            if pv3_power_low_addr:
+                data.pv3_power = self._get_register_value(pv3_power_low_addr) or 0.0
             
             # Total PV Power
             pv_total_addr = self._find_register_by_name('pv_total_power_low')
@@ -439,7 +443,7 @@ class GrowattModbus:
                 data.pv_total_power = self._get_register_value(pv_total_addr) or 0.0
             else:
                 # Calculate from strings if not available
-                data.pv_total_power = data.pv1_power + data.pv2_power
+                data.pv_total_power = data.pv1_power + data.pv2_power + data.pv3_power
             
             # AC Output
             ac_voltage_addr = self._find_register_by_name('ac_voltage')
@@ -505,7 +509,7 @@ class GrowattModbus:
             if warning_addr:
                 data.warning_code = int(self._get_register_value(warning_addr) or 0)
             
-            logger.debug(f"Read data: PV={data.pv_total_power}W, AC={data.ac_power}W, Temp={data.inverter_temp}°C")
+            logger.debug(f"Read data: PV={data.pv_total_power}W (PV1={data.pv1_power}W, PV2={data.pv2_power}W, PV3={data.pv3_power}W), AC={data.ac_power}W, Temp={data.inverter_temp}°C")
             
         except Exception as e:
             logger.error(f"Error parsing register data: {e}", exc_info=True)

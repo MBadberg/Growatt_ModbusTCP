@@ -33,7 +33,7 @@ DEFAULT_BAUDRATE = 9600
 MIN_10000_TL_X_OFFICIAL = {
     'name': 'MIN-10000-TL-X Official (Protocol V1.39)',
     'description': 'Official register mapping from Growatt Protocol V1.39 documentation',
-    'notes': 'Power registers are 32-bit pairs (HIGH/LOW). Grid frequency uses raw register 37.',
+    'notes': 'Power registers are 32-bit pairs (HIGH/LOW). Supports PV1-PV3 strings.',
     'input_registers': {
         # System Status
         3000: {'name': 'inverter_status', 'scale': 1, 'unit': '', 'desc': '0=Waiting, 1=Normal, 3=Fault'},
@@ -53,6 +53,12 @@ MIN_10000_TL_X_OFFICIAL = {
         3008: {'name': 'pv2_current', 'scale': 0.1, 'unit': 'A', 'desc': 'PV2 DC current'},
         3009: {'name': 'pv2_power_high', 'scale': 1, 'unit': '', 'desc': 'PV2 power HIGH word', 'pair': 3010},
         3010: {'name': 'pv2_power_low', 'scale': 1, 'unit': '', 'desc': 'PV2 power LOW word', 'pair': 3009, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        
+        # PV String 3 (if available on model)
+        3011: {'name': 'pv3_voltage', 'scale': 0.1, 'unit': 'V', 'desc': 'PV3 DC voltage'},
+        3012: {'name': 'pv3_current', 'scale': 0.1, 'unit': 'A', 'desc': 'PV3 DC current'},
+        3013: {'name': 'pv3_power_high', 'scale': 1, 'unit': '', 'desc': 'PV3 power HIGH word', 'pair': 3014},
+        3014: {'name': 'pv3_power_low', 'scale': 1, 'unit': '', 'desc': 'PV3 power LOW word', 'pair': 3013, 'combined_scale': 0.1, 'combined_unit': 'W'},
         
         # System Output Power (32-bit)
         3019: {'name': 'system_output_power_high', 'scale': 1, 'unit': '', 'desc': 'System output power HIGH', 'pair': 3020},
@@ -159,6 +165,10 @@ MIN_SERIES_BASE_RANGE = {
         8: {'name': 'pv2_current', 'scale': 0.1, 'unit': 'A'},
         9: {'name': 'pv2_power_high', 'scale': 1, 'unit': '', 'pair': 10},
         10: {'name': 'pv2_power_low', 'scale': 1, 'unit': '', 'pair': 9, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        11: {'name': 'pv3_voltage', 'scale': 0.1, 'unit': 'V'},
+        12: {'name': 'pv3_current', 'scale': 0.1, 'unit': 'A'},
+        13: {'name': 'pv3_power_high', 'scale': 1, 'unit': '', 'pair': 14},
+        14: {'name': 'pv3_power_low', 'scale': 1, 'unit': '', 'pair': 13, 'combined_scale': 0.1, 'combined_unit': 'W'},
         35: {'name': 'output_power_high', 'scale': 1, 'unit': '', 'pair': 36},
         36: {'name': 'output_power_low', 'scale': 1, 'unit': '', 'pair': 35, 'combined_scale': 0.1, 'combined_unit': 'W'},
         37: {'name': 'grid_frequency', 'scale': 0.01, 'unit': 'Hz'},

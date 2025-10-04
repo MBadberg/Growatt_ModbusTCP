@@ -34,14 +34,14 @@ STEP_TCP_DATA_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST): str,
     vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
     vol.Required(CONF_SLAVE_ID, default=DEFAULT_SLAVE_ID): int,
-    vol.Required(CONF_REGISTER_MAP, default="MIN_10000_VARIANT_A"): vol.In(list(REGISTER_MAPS.keys())),
+    vol.Required(CONF_REGISTER_MAP, default="MIN_10000_TL_X_OFFICIAL"): vol.In(list(REGISTER_MAPS.keys())),  # ← Changed here
 })
 
 STEP_SERIAL_DATA_SCHEMA = vol.Schema({
     vol.Required(CONF_DEVICE_PATH, default="/dev/ttyUSB0"): str,
     vol.Required(CONF_BAUDRATE, default=DEFAULT_BAUDRATE): int,
     vol.Required(CONF_SLAVE_ID, default=DEFAULT_SLAVE_ID): int,
-    vol.Required(CONF_REGISTER_MAP, default="MIN_10000_VARIANT_A"): vol.In(list(REGISTER_MAPS.keys())),
+    vol.Required(CONF_REGISTER_MAP, default="MIN_10000_TL_X_OFFICIAL"): vol.In(list(REGISTER_MAPS.keys())),  # ← Changed here
 })
 
 
