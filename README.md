@@ -13,18 +13,18 @@ Based on the official **[Growatt Modbus RTU Protocol V1.39](https://shop.franken
 
 ## ✨ Features
 
-* 📊 **Real-time monitoring** - Direct Modbus communication with your inverter - no more 5-minute averages
-* 🌙 **Night-time friendly** - Sensors stay available when inverter is offline (no sun)
-* ⚡ **Smart power flow** - Automatic calculation of export, import, and self-consumption
-* 🔌 **Multiple connections** - TCP (WiFi/Ethernet adapters)
-* 📈 **Energy dashboard ready** - Automatic integration with HA Energy Dashboard
-* 🎯 **Official registers** - Uses verified Growatt protocol documentation
-* 🌡️ **Complete diagnostics** - Temperatures, fault codes, derating status
-* 💾 **No cloud dependency** - Local polling, your data stays yours
+- 📊 **Real-time monitoring** - Direct Modbus communication with your inverter
+- 🌙 **Night-time friendly** - Sensors stay available when inverter is offline (no sun)
+- ⚡ **Smart power flow** - Automatic calculation of export, import, and self-consumption
+- 🔌 **Multiple connections** - TCP (WiFi/Ethernet adapters)
+- 📈 **Energy dashboard ready** - Automatic integration with HA Energy Dashboard
+- 🎯 **Official registers** - Uses verified Growatt protocol documentation
+- 🌡️ **Complete diagnostics** - Temperatures, fault codes, derating status
+- 💾 **No cloud dependency** - Local polling, your data stays yours
 
 ---
 
-## 🔌 Supported Models*
+## 🔌 Supported Models
 
 Based on Growatt MIN-10000-TL-X Modbus Register Map (Protocol V1.39):
 
@@ -44,15 +44,13 @@ Based on Growatt MIN-10000-TL-X Modbus Register Map (Protocol V1.39):
 
 All models support both base (0-124) and storage (3000-3124) register ranges.
 
-* Based on the documented registers, may not be physically tested
-
 ---
 
 ## 🛠️ Hardware Setup
 
 ### Inverter Connection
 
-Growatt inverters have a **SYS/COM port** on the bottom. It is likely that your installer has wired this to your smart meter and there's almost certainly space in the connector/gland to fit an additional cable. You need to connect **pins 3 & 4** to your RS485/WiFi adapter. The terminals are small screw terminals, so no additional/fancy tools required.
+Growatt inverters have a **SYS/COM port**  on the bottom. It is likely that your inverter install ran a small cable only connecting the 2 pins to the smart meter. There should be space to put another cable through the gland to connect the RS485 adapter. You need to connect to **pins 3 & 4**. Conveniently, the terminals are just small screw terminals so no special tool/pins are required.
 
 ### Connection Hardware
 
@@ -75,12 +73,14 @@ Growatt COM Pin 3 (A) ──────► Adapter RS485-A (or D+)
 Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 ```
 
-### Inverter Settings
+> ⚠️ **Note:** If data looks garbled, try swapping A and B connections. Some adapters label differently.
+
+### Inverter Settings (optional)
 
 1. Access inverter menu (usually hold OK button for 3 seconds)
 2. Navigate to **Communication** settings
-3. Set  **Modbus Address** : `1` (default)
-4. Set  **Baud Rate** : `9600` (default)
+3. Set **Modbus Address**: `1` (default)
+4. Set **Baud Rate**: `9600` (default)
 5. Save and exit
 
 ---
@@ -122,10 +122,10 @@ Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 
 #### TCP Configuration
 
-* **Host** : IP address of your RS485-TCP adapter (e.g., `192.168.1.100`)
-* **Port** : `502` (standard Modbus TCP port)
-* **Slave ID** : `1` (check inverter display if unsure)
-* **Register Map** : `MIN_10000_TL_X_OFFICIAL` (recommended)
+- **Host**: IP address of your RS485-TCP adapter (e.g., `192.168.1.100`)
+- **Port**: `502` (standard Modbus TCP port)
+- **Slave ID**: `1` (check inverter display if unsure)
+- **Register Map**: `MIN_10000_TL_X_OFFICIAL` (recommended)
 
 ### Register Maps
 
@@ -134,6 +134,8 @@ Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 | ----------------------------- | ----------------------------------------------- | ----------------------------------- |
 | **MIN_10000_TL_X_OFFICIAL** | Official Growatt V1.39 protocol (3000+ range) | Default choice for all MIN series |
 | **MIN_SERIES_BASE_RANGE**   | Alternative addressing (0-124 range)          | If official map doesn't work      |
+
+> 💡 **Migration:** Old register maps (`MIN_10000_VARIANT_A`, `MIN_10000_CORRECTED`) automatically upgrade to the official mapping.
 
 ---
 
@@ -154,9 +156,9 @@ Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 
 **Attributes:**
 
-* `firmware_version` - Inverter firmware
-* `serial_number` - Inverter serial number
-* `last_successful_update` - Last time inverter responded
+- `firmware_version` - Inverter firmware
+- `serial_number` - Inverter serial number
+- `last_successful_update` - Last time inverter responded
 
 ### AC Output
 
@@ -180,10 +182,10 @@ Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 
 **Attributes:**
 
-* `solar_production` - Current solar generation
-* `grid_export` - Power exported to grid
-* `house_load` - Current house consumption
-* `self_consumption_percentage` - % of solar self-consumed
+- `solar_production` - Current solar generation
+- `grid_export` - Power exported to grid
+- `house_load` - Current house consumption
+- `self_consumption_percentage` - % of solar self-consumed
 
 ### Power Flow (Storage/Hybrid Models)
 
@@ -221,9 +223,9 @@ Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 
 **Status Values:**
 
-* `Waiting` - Waiting for sufficient PV power or grid
-* `Normal` - Operating normally
-* `Fault` - Fault condition detected
+- `Waiting` - Waiting for sufficient PV power or grid
+- `Normal` - Operating normally
+- `Fault` - Fault condition detected
 
 ---
 
@@ -266,11 +268,11 @@ sensor.{name}_house_consumption
 
 When the inverter powers down (no sun), the integration handles it gracefully:
 
-* ✅ Sensors remain **available** (not "unavailable")
-* ✅ Last known values retained (typically 0W)
-* ✅ `last_successful_update` attribute shows when data was last fresh
-* ✅ Logs show DEBUG messages instead of errors
-* ✅ Resumes automatically when sun returns
+- ✅ Sensors remain **available** (not "unavailable")
+- ✅ Last known values retained (typically 0W)
+- ✅ `last_successful_update` attribute shows when data was last fresh
+- ✅ Logs show DEBUG messages instead of errors
+- ✅ Resumes automatically when sun returns
 
 This prevents sensor unavailability cascades in your automations and dashboards!
 
@@ -278,7 +280,7 @@ This prevents sensor unavailability cascades in your automations and dashboards!
 
 ## 🔧 Configuration Options
 
-Access via **Settings** → **Devices & Services** → **Growatt Modbus** →  **Configure** :
+Access via **Settings** → **Devices & Services** → **Growatt Modbus** → **Configure**:
 
 
 | Option            | Default    | Description                   |
@@ -292,34 +294,47 @@ Access via **Settings** → **Devices & Services** → **Growatt Modbus** →  *
 
 ## 🐛 Troubleshooting
 
+### Connection Issues
+
+**TCP Connection:**
+
+```bash
+# Test if adapter is reachable
+ping 192.168.1.100
+
+# Check if Modbus port is open (Linux/Mac)
+telnet 192.168.1.100 502
+```
+
 ### Common Problems
 
 #### "Failed to connect to inverter"
 
-* ✅ Check wiring (A and B may need swapping)
-* ✅ Verify IP address
-* ✅ Confirm inverter Modbus address (usually 1)
-* ✅ Ensure baud rate is 9600
-* ✅ Check if inverter has power (try during daytime)
+- ✅ Check wiring (A and B may need swapping)
+- ✅ Verify IP address
+- ✅ Confirm inverter Modbus address (usually 1)
+- ✅ Ensure baud rate is 9600
+- ✅ Check if inverter has power (try during daytime)
 
 #### "Unknown register map"
 
-* ✅ Try `MIN_10000_TL_X_OFFICIAL` first
-* ✅ Fall back to `MIN_SERIES_BASE_RANGE` if needed
+- ✅ Integration auto-migrates old maps
+- ✅ Try `MIN_10000_TL_X_OFFICIAL` first
+- ✅ Fall back to `MIN_SERIES_BASE_RANGE` if needed
 
 #### Power values look wrong
 
-* ✅ Compare readings with inverter display
-* ✅ Check sensor attributes for calculation method
-* ✅ Try alternative register map
-* ✅ Enable DEBUG logging and check logs
+- ✅ Compare readings with inverter display
+- ✅ Check sensor attributes for calculation method
+- ✅ Try alternative register map
+- ✅ Enable DEBUG logging and check logs
 
 #### Sensors show "Unavailable"
 
-* ✅ Check if this is during night time (expected if first-time setup)
-* ✅ Wait for sunrise and inverter to power on
-* ✅ Check logs for connection errors
-* ✅ Verify network/serial connection
+- ✅ Check if this is during night time (expected if first-time setup)
+- ✅ Wait for sunrise and inverter to power on
+- ✅ Check logs for connection errors
+- ✅ Verify network/serial connection
 
 ### Enable Debug Logging
 
@@ -339,9 +354,10 @@ logger:
 ```
 custom_components/growatt_modbus/
 ├── __init__.py              # Integration setup
+├── binary_sensor.py         # Binary sensors (inverter connectivity)
 ├── config_flow.py           # Configuration UI
 ├── const.py                 # Register definitions (official V1.39)
-├── coordinator.py           # Data coordinator with auto-migration
+├── coordinator.py           # Data coordinator with night-time handling
 ├── growatt_modbus.py        # Modbus communication (pymodbus 2.x & 3.x)
 ├── manifest.json            # Integration metadata
 ├── sensor.py                # Sensor platform with calculated values
@@ -349,6 +365,16 @@ custom_components/growatt_modbus/
 └── translations/
     └── en.json              # English translations
 ```
+
+### Device Information
+
+All device metadata (firmware version, serial number, register map) is available in the **Device Info** section of the integration rather than as sensor attributes. This keeps sensor entities clean and follows Home Assistant best practices.
+
+To view device information:
+
+1. Go to **Settings** → **Devices & Services** → **Growatt Modbus**
+2. Click on your inverter device
+3. View firmware, serial number, and other metadata in the device info card
 
 ---
 
@@ -436,35 +462,35 @@ Contributions welcome! Here's how:
 
 ### Testing Checklist
 
-* ✅ Tested with actual Growatt hardware
-* ✅ Verified TCP connections
-* ✅ Checked night-time behavior (inverter offline)
-* ✅ Confirmed Energy Dashboard integration
-* ✅ Validated all sensors appear correctly
-* ✅ Reviewed logs for errors/warnings
+- ✅ Tested with actual Growatt hardware
+- ✅ Verified TCP Connection
+- ✅ Checked night-time behavior (inverter offline)
+- ✅ Confirmed Energy Dashboard integration
+- ✅ Validated all sensors appear correctly
+- ✅ Reviewed logs for errors/warnings
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](https://claude.ai/chat/LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 🙏 Acknowledgments
 
-* Based on [Growatt Modbus RTU Protocol V1.39](https://shop.frankensolar.ca/content/documentation/Growatt/AppNote_Growatt_WIT-Modbus-RTU-Protocol-II-V1.39-English-20240416_%28frankensolar%29.pdf) (2024.04.16)
-* Built for the Home Assistant community
-* Tested by solar enthusiasts worldwide 🌍
-* Special thanks to all hardware testers and contributors
+- Based on [Growatt Modbus RTU Protocol V1.39](https://shop.frankensolar.ca/content/documentation/Growatt/AppNote_Growatt_WIT-Modbus-RTU-Protocol-II-V1.39-English-20240416_%28frankensolar%29.pdf) (2024.04.16)
+- Built for the Home Assistant community
+- Tested by solar enthusiasts worldwide 🌍
+- Special thanks to all hardware testers and contributors
 
 ---
 
 ## 📞 Support
 
-* **Issues:** [GitHub Issues](https://github.com/0xAHA/Growatt_ModbusTCP/issues)
-* **Discussions:** [GitHub Discussions](https://github.com/0xAHA/Growatt_ModbusTCP/discussions)
-* **Home Assistant Community:** [Community Forum](https://community.home-assistant.io/)
+- **Issues:** [GitHub Issues](https://github.com/0xAHA/Growatt_ModbusTCP/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/0xAHA/Growatt_ModbusTCP/discussions)
+- **Home Assistant Community:** [Community Forum](https://community.home-assistant.io/)
 
 ---
 
