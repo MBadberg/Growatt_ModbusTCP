@@ -253,6 +253,24 @@ SENSOR_DEFINITIONS = {
     },
     
     # Energy Breakdown (storage/hybrid models)
+    "grid_energy_today": {
+        "name": "Grid Energy Today",
+        "icon": "mdi:transmission-tower",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL,
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "attr": "calculated",
+        "condition": lambda data: data.load_energy_today > 0 or data.energy_to_grid_today > 0,
+    },
+    "grid_energy_total": {
+        "name": "Grid Energy Total",
+        "icon": "mdi:transmission-tower",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL,
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "attr": "calculated",
+        "condition": lambda data: data.load_energy_total > 0 or data.energy_to_grid_total > 0,
+    },
     "energy_to_grid_today": {
         "name": "Energy to Grid Today",
         "icon": "mdi:transmission-tower-export",
@@ -531,6 +549,54 @@ class GrowattModbusSensor(CoordinatorEntity, SensorEntity):
                         load = solar
                 
                 return round(max(0, load), 1)
+            
+            elif self._sensor_key == "grid_energy_today":
+                # Combined grid energy: positive=export, negative=import
+                # Net grid energy = export - import
+                export_energy = getattr(data, "energy_to_grid_today", 0)
+                load_energy = getattr(data, "load_energy_today", 0)
+                solar_energy = getattr(data, "energy_today", 0)
+                
+                # Import = load - solar + export
+                import_energy = max(0, load_energy - solar_energy + export_energy)
+                
+                # Net: positive when more export than import
+                net_energy = export_energy - import_energy
+                return round(net_energy, 2)
+            
+            elif self._sensor_key == "grid_energy_total":
+                # Combined grid energy: positive=export, negative=import
+                # Net grid energy = export - import
+                export_energy = getattr(data, "energy_to_grid_total", 0)
+                load_energy = getattr(data, "load_energy_total", 0)
+                solar_energy = getattr(data, "energy_total", 0)
+                
+                # Import = load - solar + export
+                import_energy = max(0, load_energy - solar_energy + export_energy)
+                
+                # Net: positive when more export than import
+                net_energy = export_energy - import_energy
+                return round(net_energy, 2)
+            
+            elif self._sensor_key == "grid_import_energy_today":
+                # Grid import energy = house load - solar + export
+                load_energy = getattr(data, "load_energy_today", 0)
+                solar_energy = getattr(data, "energy_today", 0)
+                export_energy = getattr(data, "energy_to_grid_today", 0)
+                
+                # Import = what you consumed minus what solar provided plus what was exported
+                import_energy = max(0, load_energy - solar_energy + export_energy)
+                return round(import_energy, 2)
+            
+            elif self._sensor_key == "grid_import_energy_total":
+                # Grid import energy = house load - solar + export
+                load_energy = getattr(data, "load_energy_total", 0)
+                solar_energy = getattr(data, "energy_total", 0)
+                export_energy = getattr(data, "energy_to_grid_total", 0)
+                
+                # Import = what you consumed minus what solar provided plus what was exported
+                import_energy = max(0, load_energy - solar_energy + export_energy)
+                return round(import_energy, 2)
             
             elif self._sensor_key == "last_update":
                 # Last successful update timestamp
