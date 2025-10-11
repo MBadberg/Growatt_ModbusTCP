@@ -371,35 +371,96 @@ SPH_3000_10000 = {
     'description': 'Hybrid inverter with battery storage (3-10kW)',
     'notes': 'Uses 0-124, 1000-1124 register ranges. Includes battery management.',
     'input_registers': {
+        # ============================================================================
+        # BASE RANGE 0-124: PV Input and AC Output (same as MIN series)
+        # ============================================================================
+        
         # System Status
+        0: {'name': 'inverter_status', 'scale': 1, 'unit': '', 'desc': '0=Waiting, 1=Normal, 3=Fault'},
+        
+        # PV Total Power (32-bit)
+        1: {'name': 'pv_total_power_high', 'scale': 1, 'unit': '', 'desc': 'Total PV power HIGH word', 'pair': 2},
+        2: {'name': 'pv_total_power_low', 'scale': 1, 'unit': '', 'desc': 'Total PV power LOW word', 'pair': 1, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        
+        # PV String 1
+        3: {'name': 'pv1_voltage', 'scale': 0.1, 'unit': 'V', 'desc': 'PV1 DC voltage'},
+        4: {'name': 'pv1_current', 'scale': 0.1, 'unit': 'A', 'desc': 'PV1 DC current'},
+        5: {'name': 'pv1_power_high', 'scale': 1, 'unit': '', 'desc': 'PV1 power HIGH word', 'pair': 6},
+        6: {'name': 'pv1_power_low', 'scale': 1, 'unit': '', 'desc': 'PV1 power LOW word', 'pair': 5, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        
+        # PV String 2
+        7: {'name': 'pv2_voltage', 'scale': 0.1, 'unit': 'V', 'desc': 'PV2 DC voltage'},
+        8: {'name': 'pv2_current', 'scale': 0.1, 'unit': 'A', 'desc': 'PV2 DC current'},
+        9: {'name': 'pv2_power_high', 'scale': 1, 'unit': '', 'desc': 'PV2 power HIGH word', 'pair': 10},
+        10: {'name': 'pv2_power_low', 'scale': 1, 'unit': '', 'desc': 'PV2 power LOW word', 'pair': 9, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        
+        # AC Output
+        37: {'name': 'ac_frequency', 'scale': 0.01, 'unit': 'Hz', 'desc': 'AC frequency'},
+        38: {'name': 'ac_voltage', 'scale': 0.1, 'unit': 'V', 'desc': 'AC voltage'},
+        39: {'name': 'ac_current', 'scale': 0.1, 'unit': 'A', 'desc': 'AC current'},
+        40: {'name': 'ac_power_high', 'scale': 1, 'unit': '', 'desc': 'AC power HIGH', 'pair': 41},
+        41: {'name': 'ac_power_low', 'scale': 1, 'unit': '', 'desc': 'AC power LOW', 'pair': 40, 'combined_scale': 0.1, 'combined_unit': 'VA'},
+        
+        # Energy
+        53: {'name': 'energy_today_high', 'scale': 1, 'unit': '', 'desc': 'Today energy HIGH', 'pair': 54},
+        54: {'name': 'energy_today_low', 'scale': 1, 'unit': '', 'desc': 'Today energy LOW', 'pair': 53, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        55: {'name': 'energy_total_high', 'scale': 1, 'unit': '', 'desc': 'Total energy HIGH', 'pair': 56},
+        56: {'name': 'energy_total_low', 'scale': 1, 'unit': '', 'desc': 'Total energy LOW', 'pair': 55, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        
+        # Temperatures
+        93: {'name': 'inverter_temp', 'scale': 0.1, 'unit': '°C'},
+        
+        # Status
+        105: {'name': 'fault_code', 'scale': 1, 'unit': ''},
+        112: {'name': 'warning_code', 'scale': 1, 'unit': ''},
+        
+        # ============================================================================
+        # STORAGE RANGE 1000-1124: Battery and Power Flow
+        # ============================================================================
+        
+        # System Work Mode
         1000: {'name': 'system_work_mode', 'scale': 1, 'unit': '', 'desc': 'Work mode'},
         
-        # Battery
-        1013: {'name': 'battery_voltage', 'scale': 0.1, 'unit': 'V'},
-        1014: {'name': 'battery_soc', 'scale': 1, 'unit': '%'},
-        1040: {'name': 'battery_temp', 'scale': 0.1, 'unit': '°C'},
-        
-        # Discharge/Charge Power
+        # Battery Discharge/Charge Power
         1009: {'name': 'discharge_power_high', 'scale': 1, 'unit': '', 'pair': 1010},
         1010: {'name': 'discharge_power_low', 'scale': 1, 'unit': '', 'pair': 1009, 'combined_scale': 0.1, 'combined_unit': 'W'},
         1011: {'name': 'charge_power_high', 'scale': 1, 'unit': '', 'pair': 1012},
         1012: {'name': 'charge_power_low', 'scale': 1, 'unit': '', 'pair': 1011, 'combined_scale': 0.1, 'combined_unit': 'W'},
         
+        # Battery State
+        1013: {'name': 'battery_voltage', 'scale': 0.1, 'unit': 'V'},
+        1014: {'name': 'battery_soc', 'scale': 1, 'unit': '%'},
+        1040: {'name': 'battery_temp', 'scale': 0.1, 'unit': '°C'},
+        
         # Power Flow
         1015: {'name': 'power_to_user_high', 'scale': 1, 'unit': '', 'pair': 1016},
         1016: {'name': 'power_to_user_low', 'scale': 1, 'unit': '', 'pair': 1015, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        1021: {'name': 'power_to_load_high', 'scale': 1, 'unit': '', 'pair': 1022},
+        1022: {'name': 'power_to_load_low', 'scale': 1, 'unit': '', 'pair': 1021, 'combined_scale': 0.1, 'combined_unit': 'W'},
         1029: {'name': 'power_to_grid_high', 'scale': 1, 'unit': '', 'pair': 1030},
         1030: {'name': 'power_to_grid_low', 'scale': 1, 'unit': '', 'pair': 1029, 'combined_scale': 0.1, 'combined_unit': 'W', 'signed': True},
         
-        # Energy
+        # Energy Breakdown
         1044: {'name': 'energy_to_user_today_high', 'scale': 1, 'unit': '', 'pair': 1045},
         1045: {'name': 'energy_to_user_today_low', 'scale': 1, 'unit': '', 'pair': 1044, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        1046: {'name': 'energy_to_user_total_high', 'scale': 1, 'unit': '', 'pair': 1047},
+        1047: {'name': 'energy_to_user_total_low', 'scale': 1, 'unit': '', 'pair': 1046, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
         1048: {'name': 'energy_to_grid_today_high', 'scale': 1, 'unit': '', 'pair': 1049},
         1049: {'name': 'energy_to_grid_today_low', 'scale': 1, 'unit': '', 'pair': 1048, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        1050: {'name': 'energy_to_grid_total_high', 'scale': 1, 'unit': '', 'pair': 1051},
+        1051: {'name': 'energy_to_grid_total_low', 'scale': 1, 'unit': '', 'pair': 1050, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
         1052: {'name': 'discharge_energy_today_high', 'scale': 1, 'unit': '', 'pair': 1053},
         1053: {'name': 'discharge_energy_today_low', 'scale': 1, 'unit': '', 'pair': 1052, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        1054: {'name': 'discharge_energy_total_high', 'scale': 1, 'unit': '', 'pair': 1055},
+        1055: {'name': 'discharge_energy_total_low', 'scale': 1, 'unit': '', 'pair': 1054, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
         1056: {'name': 'charge_energy_today_high', 'scale': 1, 'unit': '', 'pair': 1057},
         1057: {'name': 'charge_energy_today_low', 'scale': 1, 'unit': '', 'pair': 1056, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        1058: {'name': 'charge_energy_total_high', 'scale': 1, 'unit': '', 'pair': 1059},
+        1059: {'name': 'charge_energy_total_low', 'scale': 1, 'unit': '', 'pair': 1058, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        1060: {'name': 'load_energy_today_high', 'scale': 1, 'unit': '', 'pair': 1061},
+        1061: {'name': 'load_energy_today_low', 'scale': 1, 'unit': '', 'pair': 1060, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        1062: {'name': 'load_energy_total_high', 'scale': 1, 'unit': '', 'pair': 1063},
+        1063: {'name': 'load_energy_total_low', 'scale': 1, 'unit': '', 'pair': 1062, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
     },
     'holding_registers': {
         0: {'name': 'on_off', 'scale': 1, 'unit': '', 'access': 'RW'},
@@ -670,15 +731,190 @@ MIN_SERIES_BASE_RANGE = {
     }
 }
 
-# Main register map dictionary - COMPLETE
+# ============================================================================
+# NEW PROFILES - Added to support all Protocol V1.39 models
+# ============================================================================
+
+# TL-XH Series (Hybrid MIN with battery) - Uses same base as MIN_7000_10000TL_X
+TL_XH_3000_10000 = {
+    'name': 'TL-XH-3000-10000',
+    'description': 'Hybrid single-phase inverter with battery (3-10kW)',
+    'notes': 'Uses 3000-3124 register range. Extends MIN series with battery support.',
+    'input_registers': {
+        **MIN_7000_10000TL_X['input_registers'],  # Inherit all MIN registers
+        # Battery-specific registers (if different from MOD series)
+        3165: {'name': 'battery_derating_mode', 'scale': 1, 'unit': ''},
+        3169: {'name': 'battery_voltage', 'scale': 0.01, 'unit': 'V'},
+        3170: {'name': 'battery_current', 'scale': 0.1, 'unit': 'A'},
+        3171: {'name': 'battery_soc', 'scale': 1, 'unit': '%'},
+    },
+    'holding_registers': MIN_7000_10000TL_X['holding_registers'],
+}
+
+# TL-XH US Series (US version with extended range)
+TL_XH_US_3000_10000 = {
+    'name': 'TL-XH-US-3000-10000',
+    'description': 'US hybrid single-phase inverter with battery (3-10kW)',
+    'notes': 'Uses 3000-3249 register range. US-specific features and battery support.',
+    'input_registers': {
+        **TL_XH_3000_10000['input_registers'],  # Inherit TL-XH registers
+        # US-specific extended registers in 3125-3249 range
+        3125: {'name': 'battery_discharge_today_high', 'scale': 1, 'unit': '', 'pair': 3126},
+        3126: {'name': 'battery_discharge_today_low', 'scale': 1, 'unit': '', 'pair': 3125, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        3129: {'name': 'battery_charge_today_high', 'scale': 1, 'unit': '', 'pair': 3130},
+        3130: {'name': 'battery_charge_today_low', 'scale': 1, 'unit': '', 'pair': 3129, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+    },
+    'holding_registers': TL_XH_3000_10000['holding_registers'],
+}
+
+# MAC Series (Three-phase compact) - Similar to MID
+MAC_20000_40000TL3_X = {
+    'name': 'MAC-20000-40000TL3-X',
+    'description': 'Compact three-phase commercial inverter (20-40kW)',
+    'notes': 'Uses 0-124, 125-249 register range. Similar to MID series.',
+    'input_registers': MID_15000_25000TL3_X['input_registers'],  # Shares register layout with MID
+    'holding_registers': MID_15000_25000TL3_X['holding_registers'],
+}
+
+# MAX 1500V Series (High-voltage commercial)
+MAX_1500V_SERIES = {
+    'name': 'MAX-1500V',
+    'description': 'High-voltage commercial three-phase inverter (up to 150kW)',
+    'notes': 'Uses 0-124, 125-249, 875-999 register ranges.',
+    'input_registers': {
+        **MAX_50000_125000TL3_X['input_registers'],  # Inherit MAX registers
+        # Extended PV strings in 875-999 range (PV9-PV16 for large arrays)
+        875: {'name': 'pv9_voltage', 'scale': 0.1, 'unit': 'V'},
+        876: {'name': 'pv9_current', 'scale': 0.1, 'unit': 'A'},
+        877: {'name': 'pv9_power_high', 'scale': 1, 'unit': '', 'pair': 878},
+        878: {'name': 'pv9_power_low', 'scale': 1, 'unit': '', 'pair': 877, 'combined_scale': 0.1, 'combined_unit': 'W'},
+    },
+    'holding_registers': MAX_50000_125000TL3_X['holding_registers'],
+}
+
+# MAX-X LV Series (Low-voltage commercial)
+MAX_X_LV_SERIES = {
+    'name': 'MAX-X-LV',
+    'description': 'Low-voltage commercial three-phase inverter (up to 125kW)',
+    'notes': 'Uses 0-124, 125-249, 875-999 register ranges.',
+    'input_registers': MAX_1500V_SERIES['input_registers'],  # Same layout as MAX 1500V
+    'holding_registers': MAX_1500V_SERIES['holding_registers'],
+}
+
+# MIX Series (Legacy storage) - Similar to SPH
+MIX_SERIES = {
+    'name': 'MIX Series',
+    'description': 'Legacy storage inverter (merged into SPH per protocol v1.35)',
+    'notes': 'Uses 0-124, 1000-1124 register range. Battery storage system.',
+    'input_registers': SPH_3000_10000['input_registers'],  # Shares register layout with SPH
+    'holding_registers': SPH_3000_10000['holding_registers'],
+}
+
+# SPA Series (AC-coupled storage)
+SPA_SERIES = {
+    'name': 'SPA Series',
+    'description': 'AC-coupled storage inverter',
+    'notes': 'Uses 0-124, 1000-1124 register range. AC-coupled battery system.',
+    'input_registers': {
+        # System Status
+        1000: {'name': 'system_work_mode', 'scale': 1, 'unit': '', 'desc': 'Work mode'},
+        
+        # Battery (same as SPH)
+        1013: {'name': 'battery_voltage', 'scale': 0.1, 'unit': 'V'},
+        1014: {'name': 'battery_soc', 'scale': 1, 'unit': '%'},
+        1040: {'name': 'battery_temp', 'scale': 0.1, 'unit': '°C'},
+        
+        # Power Flow
+        1015: {'name': 'power_to_user_high', 'scale': 1, 'unit': '', 'pair': 1016},
+        1016: {'name': 'power_to_user_low', 'scale': 1, 'unit': '', 'pair': 1015, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        1029: {'name': 'power_to_grid_high', 'scale': 1, 'unit': '', 'pair': 1030},
+        1030: {'name': 'power_to_grid_low', 'scale': 1, 'unit': '', 'pair': 1029, 'combined_scale': 0.1, 'combined_unit': 'W', 'signed': True},
+        
+        # Energy
+        1044: {'name': 'energy_to_user_today_high', 'scale': 1, 'unit': '', 'pair': 1045},
+        1045: {'name': 'energy_to_user_today_low', 'scale': 1, 'unit': '', 'pair': 1044, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        1048: {'name': 'energy_to_grid_today_high', 'scale': 1, 'unit': '', 'pair': 1049},
+        1049: {'name': 'energy_to_grid_today_low', 'scale': 1, 'unit': '', 'pair': 1048, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+    },
+    'holding_registers': {
+        0: {'name': 'on_off', 'scale': 1, 'unit': '', 'access': 'RW'},
+        1044: {'name': 'priority', 'scale': 1, 'unit': '', 'access': 'RW', 'desc': '0=Load, 1=Battery, 2=Grid'},
+    }
+}
+
+# WIT TL3 Series (Business storage power)
+WIT_TL3_SERIES = {
+    'name': 'WIT-TL3',
+    'description': 'Business storage power three-phase inverter',
+    'notes': 'Uses 0-124, 125-249, 875-999, 8000-8124 register ranges.',
+    'input_registers': {
+        # Inherits three-phase base from MAX series
+        **MAX_50000_125000TL3_X['input_registers'],
+        
+        # Battery from MOD series (3000 range mapped to 8000 range for WIT)
+        8034: {'name': 'battery_voltage', 'scale': 0.1, 'unit': 'V'},
+        8035: {'name': 'battery_current', 'scale': 0.1, 'unit': 'A'},
+        8093: {'name': 'battery_soc', 'scale': 1, 'unit': '%'},
+        8094: {'name': 'battery_soh', 'scale': 1, 'unit': '%'},
+        
+        # Extended PV in 875-999 range
+        875: {'name': 'pv9_voltage', 'scale': 0.1, 'unit': 'V'},
+        876: {'name': 'pv9_current', 'scale': 0.1, 'unit': 'A'},
+        877: {'name': 'pv9_power_high', 'scale': 1, 'unit': '', 'pair': 878},
+        878: {'name': 'pv9_power_low', 'scale': 1, 'unit': '', 'pair': 877, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        879: {'name': 'pv10_voltage', 'scale': 0.1, 'unit': 'V'},
+        880: {'name': 'pv10_current', 'scale': 0.1, 'unit': 'A'},
+        881: {'name': 'pv10_power_high', 'scale': 1, 'unit': '', 'pair': 882},
+        882: {'name': 'pv10_power_low', 'scale': 1, 'unit': '', 'pair': 881, 'combined_scale': 0.1, 'combined_unit': 'W'},
+    },
+    'holding_registers': {
+        0: {'name': 'on_off', 'scale': 1, 'unit': '', 'access': 'RW'},
+        3: {'name': 'active_power_rate', 'scale': 1, 'unit': '%', 'access': 'RW'},
+        30: {'name': 'modbus_address', 'scale': 1, 'unit': '', 'access': 'RW'},
+        871: {'name': 'grid_phase_sequence', 'scale': 1, 'unit': '', 'access': 'RW', 'desc': '0=Positive, 1=Reverse'},
+        874: {'name': 'parallel_enable', 'scale': 1, 'unit': '', 'access': 'RW', 'desc': '0=Disable, 1=Enable'},
+    }
+}
+
+# ============================================================================
+# Main register map dictionary - ALL 14 PROFILES
+# ============================================================================
+
 REGISTER_MAPS = {
+    # MIN Series - Single Phase String
     'MIN_3000_6000TL_X': MIN_3000_6000TL_X,
-    'MIN_7000_10000TL_X': MIN_7000_10000TL_X,  # Your working config
+    'MIN_7000_10000TL_X': MIN_7000_10000TL_X,
+    'MIN_SERIES_BASE_RANGE': MIN_SERIES_BASE_RANGE,  # Legacy/alternative addressing
+    
+    # TL-XH Series - Single Phase Hybrid
+    'TL_XH_3000_10000': TL_XH_3000_10000,
+    'TL_XH_US_3000_10000': TL_XH_US_3000_10000,
+    
+    # MID Series - Three Phase String
     'MID_15000_25000TL3_X': MID_15000_25000TL3_X,
+    
+    # MAC Series - Three Phase Compact
+    'MAC_20000_40000TL3_X': MAC_20000_40000TL3_X,
+    
+    # MAX Series - Commercial Three Phase
     'MAX_50000_125000TL3_X': MAX_50000_125000TL3_X,
+    'MAX_1500V_SERIES': MAX_1500V_SERIES,
+    'MAX_X_LV_SERIES': MAX_X_LV_SERIES,
+    
+    # SPH Series - Hybrid Storage Single Phase
     'SPH_3000_10000': SPH_3000_10000,
+    
+    # MIX Series - Legacy Storage
+    'MIX_SERIES': MIX_SERIES,
+    
+    # SPA Series - AC Coupled Storage
+    'SPA_SERIES': SPA_SERIES,
+    
+    # MOD Series - Modular Three Phase Hybrid
     'MOD_6000_15000TL3_XH': MOD_6000_15000TL3_XH,
-    'MIN_SERIES_BASE_RANGE': MIN_SERIES_BASE_RANGE,  # Keep for compatibility
+    
+    # WIT Series - Business Storage Power
+    'WIT_TL3_SERIES': WIT_TL3_SERIES,
 }
 
 # Status code mappings
