@@ -579,6 +579,23 @@ Contributions welcome! Here's how:
 - ✅ Tested options configuration changes
 - ✅ Reviewed logs for errors/warnings
 
+### 🔧 Built-In Diagnostic Service
+
+**NEW!** Test your connection using our built-in service - no Terminal needed!
+
+1. **Install** the integration files (don't need to configure yet)
+2. **Restart** Home Assistant
+3. Go to **Developer Tools** → **Services**
+4. Search for **"Growatt Modbus: Run Diagnostic Test"**
+5. Fill in your connection details
+6. Click **"Call Service"**
+7. Check the notification for results!
+
+See [DIAGNOSTIC_SERVICE.md](DIAGNOSTIC_SERVICE.md) for full instructions.
+
+**Alternatively:** Use our [standalone Python script](DIAGNOSTIC_TOOL.md) if you prefer command-line testing.
+
+
 ### Help Us Test More Models! 🧪
 
 We need community members with different inverter models to validate the untested profiles. Currently only **MIN 7000-10000TL-X** is tested with real hardware!

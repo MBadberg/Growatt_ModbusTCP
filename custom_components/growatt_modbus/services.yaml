@@ -70,3 +70,59 @@ update_register_map:
           options:
             - "MIN_SERIES_STANDARD"
             - "MIN_10000_VARIANT_A"
+
+run_diagnostic:
+  name: Run Diagnostic Test
+  description: Test Modbus TCP connection and validate inverter responses before installing the integration
+  fields:
+    host:
+      name: IP Address
+      description: IP address of your RS485-TCP adapter
+      required: true
+      example: "192.168.1.100"
+      selector:
+        text:
+    port:
+      name: Port
+      description: Modbus TCP port (usually 502)
+      required: false
+      default: 502
+      selector:
+        number:
+          min: 1
+          max: 65535
+          mode: box
+    slave_id:
+      name: Slave ID
+      description: Modbus slave ID (check inverter display, usually 1)
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 247
+          mode: box
+    inverter_series:
+      name: Inverter Series
+      description: Select your inverter model
+      required: true
+      selector:
+        select:
+          options:
+            - label: "MIN 3000-6000TL-X (2 PV, single-phase, 3-6kW)"
+              value: "min_3000_6000_tl_x"
+            - label: "MIN 7000-10000TL-X (3 PV, single-phase, 7-10kW)"
+              value: "min_7000_10000_tl_x"
+            - label: "SPH 3000-10000 (Hybrid with battery, 3-10kW)"
+              value: "sph_3000_10000"
+            - label: "MID 15000-25000TL3-X (Three-phase, 15-25kW)"
+              value: "mid_15000_25000tl3_x"
+            - label: "MOD 6000-15000TL3-XH (Hybrid three-phase, 6-15kW)"
+              value: "mod_6000_15000tl3_xh"
+    notify:
+      name: Send Notification
+      description: Show results as a persistent notification
+      required: false
+      default: true
+      selector:
+        boolean:

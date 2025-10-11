@@ -11,6 +11,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
 from .coordinator import GrowattModbusCoordinator
+from .diagnostic import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,6 +23,10 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Growatt Modbus integration."""
     hass.data.setdefault(DOMAIN, {})
+    
+    # Set up diagnostic service
+    await async_setup_services(hass)
+    
     return True
 
 
