@@ -65,7 +65,7 @@ class GrowattModbusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # Get the profile to set the correct register map
-            series = self.config_data.get(CONF_INVERTER_SERIES, "MIN_7000_10000_TL_X")
+            series = self.config_data.get(CONF_INVERTER_SERIES, "min_7000_10000_tl_x")
             profile = get_profile(series)
             
             # Add register map from profile
@@ -99,7 +99,7 @@ class GrowattModbusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "unknown"
 
         # Get series info for description
-        series = self.config_data.get(CONF_INVERTER_SERIES, "MIN_7000_10000_TL_X")
+        series = self.config_data.get(CONF_INVERTER_SERIES, "min_7000_10000_tl_x")
         profile = get_profile(series)
         series_info = f"{profile.name} - {profile.description}" if profile else "Unknown series"
 
