@@ -1,7 +1,7 @@
 # Growatt Modbus Integration for Home Assistant ☀️
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.0.2b-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.0.3-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Growatt_ModbusTCP.svg)](https://github.com/0xAHA/Growatt_ModbusTCP/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/0xAHA/Growatt_ModbusTCP.svg?style=social)](https://github.com/0xAHA/Growatt_ModbusTCP)
 
@@ -22,26 +22,51 @@ Based on the official **[Growatt Modbus RTU Protocol V1.39](https://shop.franken
 - 🌡️ **Complete diagnostics** - Temperatures, fault codes, derating status
 - 💾 **No cloud dependency** - Local polling, your data stays yours
 - 🔄 **Grid power inversion** - Fix backwards CT clamp installations with one click
-- 🎛️ **Multi-model support** - Profiles for MIN, MID, MAX, SPH, and MOD series
+- 🎛️ **Multi-model support** - 14 profiles covering MIN, MID, MAX, SPH, MOD, TL-XH, MAC, MIX, SPA, and WIT series
 
 ---
 
 ## 🔌 Supported Inverter Models
 
-The integration supports multiple Growatt inverter series with dedicated register maps:
+The integration supports **14 different Growatt inverter profiles** with dedicated register maps:
 
-| Inverter Series | Model Range | Type | Phase | Tested | Notes |
-|----------------|-------------|------|-------|--------|-------|
-| **MIN 3000-6000TL-X** | 3000-6000TL-X | Grid-tied | Single | ⚠️ Untested | 2 PV strings, 3-6kW |
-| **MIN 7000-10000TL-X** | 7000-10000TL-X | Grid-tied | Single | ✅ **Tested** | 3 PV strings, 7-10kW |
-| **MID 15000-25000TL3-X** | 15000-25000TL3-X | Grid-tied | Three | ⚠️ Untested | Commercial, 15-25kW |
-| **MAX 50000-125000TL3-X** | 50000-125000TL3-X | Grid-tied | Three | ⚠️ Untested | Industrial, 50-125kW |
-| **SPH 3000-10000** | SPH 3000-10000 | Hybrid | Single | ⚠️ Untested | Battery storage, 3-10kW |
-| **MOD 6000-15000TL3-XH** | MOD 6000-15000TL3-XH | Hybrid | Three | ⚠️ Untested | 3-phase hybrid, 6-15kW |
+### Single-Phase Grid-Tied Inverters
+
+| Inverter Series | Model Range | PV Strings | Tested | Notes |
+|----------------|-------------|------------|--------|-------|
+| **MIN 3000-6000TL-X** | 3000-6000TL-X | 2 | ⚠️ Untested | Grid-tied, 3-6kW |
+| **MIN 7000-10000TL-X** | 7000-10000TL-X | 3 | ✅ **Tested** | Grid-tied, 7-10kW |
+
+### Single-Phase Hybrid Inverters (with Battery)
+
+| Inverter Series | Model Range | PV Strings | Tested | Notes |
+|----------------|-------------|------------|--------|-------|
+| **TL-XH 3000-10000** | TL-XH 3000-10000 | 3 | ⚠️ Untested | Hybrid with battery, 3-10kW |
+| **TL-XH US 3000-10000** | TL-XH US 3000-10000 | 3 | ⚠️ Untested | US version hybrid, 3-10kW |
+| **SPH 3000-10000** | SPH 3000-10000 | 2 | ⚠️ Untested | Storage hybrid, 3-10kW |
+| **MIX Series** | Various | 2 | ⚠️ Untested | Legacy storage (merged into SPH) |
+| **SPA Series** | Various | - | ⚠️ Untested | AC-coupled storage |
+
+### Three-Phase Grid-Tied Inverters
+
+| Inverter Series | Model Range | PV Strings | Tested | Notes |
+|----------------|-------------|------------|--------|-------|
+| **MID 15000-25000TL3-X** | 15000-25000TL3-X | 2 | ⚠️ Untested | Commercial, 15-25kW |
+| **MAC 20000-40000TL3-X** | MAC 20000-40000TL3-X | 2 | ⚠️ Untested | Compact commercial, 20-40kW |
+| **MAX 50000-125000TL3-X** | MAX 50000-125000TL3-X | 3 | ⚠️ Untested | Industrial, 50-125kW |
+| **MAX 1500V Series** | MAX 1500V | 3+ | ⚠️ Untested | High-voltage, up to 150kW |
+| **MAX-X LV Series** | MAX-X LV | 3+ | ⚠️ Untested | Low-voltage, up to 125kW |
+
+### Three-Phase Hybrid Inverters (with Battery)
+
+| Inverter Series | Model Range | PV Strings | Tested | Notes |
+|----------------|-------------|------------|--------|-------|
+| **MOD 6000-15000TL3-XH** | MOD 6000-15000TL3-XH | 3 | ⚠️ Untested | Modular hybrid, 6-15kW |
+| **WIT TL3 Series** | WIT TL3 | 3+ | ⚠️ Untested | Business storage, up to 50kW |
 
 **Legend:**
 - ✅ **Tested** - Confirmed working with real hardware
-- ⚠️ **Untested** - Profile created from documentation, needs validation
+- ⚠️ **Untested** - Profile created from official documentation, needs validation
 
 > 💡 **Help us test!** If you have a model marked as untested and can confirm it works, please open an issue or PR to update the documentation!
 
@@ -51,49 +76,49 @@ The integration supports multiple Growatt inverter series with dedicated registe
 
 Different inverter models create different sensors based on their capabilities:
 
-| Sensor | MIN 3-6k | MIN 7-10k | MID | MAX | SPH | MOD |
-|--------|:--------:|:---------:|:---:|:---:|:---:|:---:|
+| Sensor | MIN 3-6k | MIN 7-10k | TL-XH | MID/MAC | MAX | SPH | MOD/WIT |
+|--------|:--------:|:---------:|:-----:|:-------:|:---:|:---:|:-------:|
 | **Solar Input** |
-| PV1 Voltage/Current/Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| PV2 Voltage/Current/Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| PV3 Voltage/Current/Power | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Solar Total Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PV1 Voltage/Current/Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PV2 Voltage/Current/Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PV3 Voltage/Current/Power | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
+| Solar Total Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **AC Output (Single-Phase)** |
-| AC Voltage/Current/Power | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| AC Frequency | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| AC Voltage/Current/Power | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| AC Frequency | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
 | **AC Output (Three-Phase)** |
-| AC Phase A/B/C Voltage | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| AC Phase A/B/C Current | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| AC Phase A/B/C Power | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| AC Total Power | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| AC Phase R/S/T Voltage | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| AC Phase R/S/T Current | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| AC Phase R/S/T Power | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| AC Total Power | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
 | **Grid Power (Calculated)** |
-| Grid Export Power | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Grid Import Power | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Self Consumption | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| House Consumption | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Grid Export Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Grid Import Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Self Consumption | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| House Consumption | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Grid Power (From Registers)** |
-| Power to Grid | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Power to Load | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Power to User | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Power to Grid | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Power to Load | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Power to User | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
 | **Battery (Hybrid Only)** |
-| Battery Voltage/Current/Power | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Battery SOC | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Battery Temperature | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Battery Voltage/Current/Power | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Battery SOC | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Battery Temperature | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
 | **Energy Totals** |
-| Energy Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Energy to Grid Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Load Energy Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Energy Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Energy to Grid Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Load Energy Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **System & Diagnostics** |
-| Inverter Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| IPM Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Boost Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Status/Derating/Faults | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Inverter Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| IPM Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Boost Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Status/Derating/Faults | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **Legend:**
 - ✅ Available for this model
 - ❌ Not available (hardware limitation)
 
-> 📝 **Note:** Hybrid models (SPH/MOD) have power flow measured directly from registers. Grid-tied models (MIN/MID/MAX) calculate power flow from solar production vs AC output.
+> 📝 **Note:** Hybrid models (TL-XH, SPH, MOD, WIT) have power flow measured directly from registers. Grid-tied models (MIN, MID, MAC, MAX) calculate power flow from solar production vs AC output.
 
 ---
 
@@ -169,14 +194,37 @@ Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 
 ### Inverter Series Selection
 
+Choose the profile that matches your inverter model:
+
+#### Single-Phase Grid-Tied
 | Selection | When to Use |
 |-----------|-------------|
 | **MIN 3000-6000TL-X** | 2 PV string models (3-6kW single-phase) |
 | **MIN 7000-10000TL-X** | 3 PV string models (7-10kW single-phase) |
-| **MID 15000-25000TL3-X** | Commercial 3-phase grid-tied (15-25kW) |
-| **MAX 50000-125000TL3-X** | Industrial 3-phase grid-tied (50-125kW) |
-| **SPH 3000-10000** | Single-phase hybrid with battery (3-10kW) |
-| **MOD 6000-15000TL3-XH** | 3-phase hybrid with battery (6-15kW) |
+
+#### Single-Phase Hybrid (with Battery)
+| Selection | When to Use |
+|-----------|-------------|
+| **TL-XH 3000-10000** | 3 PV string hybrid with battery (3-10kW) |
+| **TL-XH US 3000-10000** | US version 3 PV string hybrid (3-10kW) |
+| **SPH 3000-10000** | 2 PV string storage hybrid (3-10kW) |
+| **MIX Series** | Legacy storage system |
+| **SPA Series** | AC-coupled storage system |
+
+#### Three-Phase Grid-Tied
+| Selection | When to Use |
+|-----------|-------------|
+| **MID 15000-25000TL3-X** | Commercial 3-phase (15-25kW) |
+| **MAC 20000-40000TL3-X** | Compact commercial 3-phase (20-40kW) |
+| **MAX 50000-125000TL3-X** | Industrial 3-phase (50-125kW) |
+| **MAX 1500V Series** | High-voltage commercial (up to 150kW) |
+| **MAX-X LV Series** | Low-voltage commercial (up to 125kW) |
+
+#### Three-Phase Hybrid (with Battery)
+| Selection | When to Use |
+|-----------|-------------|
+| **MOD 6000-15000TL3-XH** | Modular 3-phase hybrid (6-15kW) |
+| **WIT TL3 Series** | Business storage 3-phase (up to 50kW) |
 
 ### TCP Connection Settings
 
@@ -195,9 +243,9 @@ Access via **Settings** → **Devices & Services** → **Growatt Modbus** → **
 | **Device Name** | "Growatt" | - | Friendly name (appears before all sensor names) |
 | **Scan Interval** | 30 seconds | 5-300s | How often to poll inverter |
 | **Connection Timeout** | 10 seconds | 1-60s | How long to wait for responses |
-| **Invert Grid Power** 🆕 | OFF | ON/OFF | **Reverse import/export if CT clamp backwards** |
+| **Invert Grid Power** | OFF | ON/OFF | **Reverse import/export if CT clamp backwards** |
 
-### 🔄 Invert Grid Power (New in v0.0.2!)
+### 🔄 Invert Grid Power
 
 Got your CT clamp installed backwards? No problem! Just enable this option:
 
@@ -233,9 +281,9 @@ Got your CT clamp installed backwards? No problem! Just enable this option:
 | `sensor.{name}_pv2_voltage` | PV2 Voltage | V | String 2 DC voltage |
 | `sensor.{name}_pv2_current` | PV2 Current | A | String 2 DC current |
 | `sensor.{name}_pv2_power` | PV2 Power | W | String 2 power output |
-| `sensor.{name}_pv3_voltage` | PV3 Voltage | V | String 3 DC voltage (MIN 7-10k, MID, MAX, MOD only) |
-| `sensor.{name}_pv3_current` | PV3 Current | A | String 3 DC current (MIN 7-10k, MID, MAX, MOD only) |
-| `sensor.{name}_pv3_power` | PV3 Power | W | String 3 power output (MIN 7-10k, MID, MAX, MOD only) |
+| `sensor.{name}_pv3_voltage` | PV3 Voltage | V | String 3 DC voltage (selected models) |
+| `sensor.{name}_pv3_current` | PV3 Current | A | String 3 DC current (selected models) |
+| `sensor.{name}_pv3_power` | PV3 Power | W | String 3 power output (selected models) |
 | `sensor.{name}_solar_total_power` | Solar Total Power | W | Combined PV power |
 
 **Attributes:**
@@ -256,15 +304,15 @@ Got your CT clamp installed backwards? No problem! Just enable this option:
 
 | Entity ID | Name | Unit | Description |
 |-----------|------|------|-------------|
-| `sensor.{name}_ac_voltage_a` | AC Voltage Phase A | V | Phase A voltage |
-| `sensor.{name}_ac_voltage_b` | AC Voltage Phase B | V | Phase B voltage |
-| `sensor.{name}_ac_voltage_c` | AC Voltage Phase C | V | Phase C voltage |
-| `sensor.{name}_ac_current_a` | AC Current Phase A | A | Phase A current |
-| `sensor.{name}_ac_current_b` | AC Current Phase B | A | Phase B current |
-| `sensor.{name}_ac_current_c` | AC Current Phase C | A | Phase C current |
-| `sensor.{name}_ac_power_a` | AC Power Phase A | W | Phase A power |
-| `sensor.{name}_ac_power_b` | AC Power Phase B | W | Phase B power |
-| `sensor.{name}_ac_power_c` | AC Power Phase C | W | Phase C power |
+| `sensor.{name}_ac_voltage_r` | AC Voltage Phase R | V | Phase R voltage |
+| `sensor.{name}_ac_voltage_s` | AC Voltage Phase S | V | Phase S voltage |
+| `sensor.{name}_ac_voltage_t` | AC Voltage Phase T | V | Phase T voltage |
+| `sensor.{name}_ac_current_r` | AC Current Phase R | A | Phase R current |
+| `sensor.{name}_ac_current_s` | AC Current Phase S | A | Phase S current |
+| `sensor.{name}_ac_current_t` | AC Current Phase T | A | Phase T current |
+| `sensor.{name}_ac_power_r` | AC Power Phase R | W | Phase R power |
+| `sensor.{name}_ac_power_s` | AC Power Phase S | W | Phase S power |
+| `sensor.{name}_ac_power_t` | AC Power Phase T | W | Phase T power |
 | `sensor.{name}_ac_power_total` | AC Total Power | W | Total 3-phase power |
 | `sensor.{name}_ac_frequency` | AC Frequency | Hz | Grid frequency |
 
@@ -469,8 +517,9 @@ custom_components/growatt_modbus/
 ├── __init__.py              # Integration setup
 ├── binary_sensor.py         # Binary sensors (inverter connectivity)
 ├── config_flow.py           # Configuration UI with inverter series selection
-├── const.py                 # Register definitions for all models (V1.39)
+├── const.py                 # Register definitions for all 14 models (V1.39)
 ├── coordinator.py           # Data coordinator with night-time handling
+├── device_profiles.py       # Inverter profile definitions
 ├── growatt_modbus.py        # Modbus communication (pymodbus 2.x & 3.x)
 ├── manifest.json            # Integration metadata
 ├── sensor.py                # Sensor platform with model-specific sensors
@@ -491,15 +540,21 @@ To view device information:
 
 ---
 
-## 🆕 What's New in v0.0.2
+## 🆕 What's New in v0.0.3
 
-- 🎛️ **Multi-Model Support** - Added profiles for MIN (3-6k & 7-10k), MID, MAX, SPH, and MOD series
+- 🎛️ **Expanded Model Support** - Now supports 14 inverter profiles (up from 6)
+- 🔋 **Fixed SPH Register Map** - SPH models now include complete PV, AC, and battery sensors
+- ⚡ **New Hybrid Series** - Added TL-XH, TL-XH US profiles for single-phase hybrid inverters
+- 🏭 **More Commercial Models** - Added MAC, MAX 1500V, MAX-X LV, WIT TL3 series
+- 💾 **Legacy Storage** - Added MIX and SPA series profiles
+- 📊 **Profile-Based Sensors** - Optimized sensor creation based on inverter capabilities
+- 🐛 **Bug Fixes** - Resolved config flow loading issues and type hint errors
+
+### v0.0.2 Features (Previously Released)
 - 🔄 **Invert Grid Power Option** - Fix backwards CT clamp installations via UI toggle
 - 📊 **Model-Specific Sensors** - Only relevant sensors created based on inverter capabilities
 - ⚡ **Three-Phase Support** - Full support for MID, MAX, and MOD models
-- 🔋 **Battery Sensors** - Complete battery monitoring for SPH and MOD hybrid models
 - 🎨 **Enhanced Configuration UI** - Better inverter series selection with descriptions
-- 📝 **Improved Options Flow** - Device name, timeout, and grid power inversion settings
 
 ---
 
@@ -526,13 +581,12 @@ Contributions welcome! Here's how:
 
 ### Help Us Test More Models! 🧪
 
-We need community members with different inverter models to validate the untested profiles:
+We need community members with different inverter models to validate the untested profiles. Currently only **MIN 7000-10000TL-X** is tested with real hardware!
 
-- MIN 3000-6000TL-X series
-- MID 15000-25000TL3-X series
-- MAX 50000-125000TL3-X series
-- SPH 3000-10000 series
-- MOD 6000-15000TL3-XH series
+**Profiles needing validation:**
+- All single-phase grid-tied (MIN 3-6k)
+- All hybrid models (TL-XH, SPH, MIX, SPA)
+- All three-phase models (MID, MAC, MAX variants, MOD, WIT)
 
 If you successfully test any of these, please report back via GitHub Issues!
 
@@ -548,7 +602,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - Based on [Growatt Modbus RTU Protocol V1.39](https://shop.frankensolar.ca/content/documentation/Growatt/AppNote_Growatt_WIT-Modbus-RTU-Protocol-II-V1.39-English-20240416_%28frankensolar%29.pdf) (2024.04.16)
 - Built for the Home Assistant community
-- Tested by solar enthusiasts worldwide 🌍
+- Tested by solar enthusiasts worldwide (soon, hopefully) 🌍
 - Special thanks to all hardware testers and contributors
 - MIN-10000TL-X validation by [@0xAHA](https://github.com/0xAHA)
 
