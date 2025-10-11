@@ -6,10 +6,12 @@
         "description": "Configure your Growatt inverter connection. Choose between TCP (Ethernet/WiFi adapter like EW11) or Serial (USB-to-RS485 adapter).",
         "data": {
           "name": "Integration Name",
+          "inverter_series": "Inverter Series",
           "connection_type": "Connection Type"
         },
         "data_description": {
           "name": "Friendly name for this inverter",
+          "inverter_series": "Select your inverter model/series",
           "connection_type": "How to connect to your inverter"
         }
       },
@@ -19,14 +21,12 @@
         "data": {
           "host": "IP Address",
           "port": "Port",
-          "slave_id": "Modbus Slave ID",
-          "register_map": "Register Map"
+          "slave_id": "Modbus Slave ID"
         },
         "data_description": {
           "host": "IP address of your RS485-to-TCP converter",
           "port": "Modbus TCP port (usually 502)",
-          "slave_id": "Inverter Modbus address (usually 1)",
-          "register_map": "Register mapping for your inverter model"
+          "slave_id": "Inverter Modbus address (usually 1)"
         }
       },
       "serial": {
@@ -35,14 +35,12 @@
         "data": {
           "device_path": "Device Path",
           "baudrate": "Baud Rate",
-          "slave_id": "Modbus Slave ID",
-          "register_map": "Register Map"
+          "slave_id": "Modbus Slave ID"
         },
         "data_description": {
           "device_path": "Serial device path (e.g., /dev/ttyUSB0 or COM3)",
           "baudrate": "Serial communication speed (usually 9600)",
-          "slave_id": "Inverter Modbus address (usually 1)",
-          "register_map": "Register mapping for your inverter model"
+          "slave_id": "Inverter Modbus address (usually 1)"
         }
       }
     },
@@ -58,15 +56,31 @@
     "step": {
       "init": {
         "title": "Growatt Modbus Options",
-        "description": "Configure polling and timeout settings",
+        "description": "Configure device name, polling settings, and grid power options",
         "data": {
-          "scan_interval": "Scan Interval (seconds)",
-          "timeout": "Connection Timeout (seconds)"
+          "device_name": "Device Name",
+          "scan_interval": "Scan Interval",
+          "timeout": "Connection Timeout",
+          "invert_grid_power": "Invert Grid Power"
         },
         "data_description": {
-          "scan_interval": "How often to poll the inverter for new data",
-          "timeout": "How long to wait for responses from the inverter"
+          "device_name": "Friendly name for the device (appears before all sensor names)",
+          "scan_interval": "How often to poll the inverter for new data (5-300 seconds)",
+          "timeout": "How long to wait for responses from the inverter (1-60 seconds)",
+          "invert_grid_power": "Enable if CT clamp installed backwards (import/export swapped)"
         }
+      }
+    }
+  },
+  "selector": {
+    "inverter_series": {
+      "options": {
+        "MIN_3000_6000_TL_X": "MIN 3000-6000TL-X (2 PV, 3-6kW)",
+        "MIN_7000_10000_TL_X": "MIN 7000-10000TL-X (3 PV, 7-10kW)",
+        "MID_15000_25000_TL3_X": "MID 15000-25000TL3-X (3-phase, 15-25kW)",
+        "MAX_50000_125000TL3_X": "MAX 50000-125000TL3-X (3-phase, 50-125kW)",
+        "SPH_3000_10000": "SPH 3000-10000 (Hybrid with battery, 3-10kW)",
+        "MOD_6000_15000_TL3_XH": "MOD 6000-15000TL3-XH (3-phase hybrid, 6-15kW)"
       }
     }
   }

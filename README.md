@@ -1,7 +1,7 @@
 # Growatt Modbus Integration for Home Assistant ☀️
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.0.1-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.0.2b-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Growatt_ModbusTCP.svg)](https://github.com/0xAHA/Growatt_ModbusTCP/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/0xAHA/Growatt_ModbusTCP.svg?style=social)](https://github.com/0xAHA/Growatt_ModbusTCP)
 
@@ -16,33 +16,84 @@ Based on the official **[Growatt Modbus RTU Protocol V1.39](https://shop.franken
 - 📊 **Real-time monitoring** - Direct Modbus communication with your inverter
 - 🌙 **Night-time friendly** - Sensors stay available when inverter is offline (no sun)
 - ⚡ **Smart power flow** - Automatic calculation of export, import, and self-consumption
-- 🔌 **Multiple connections** - TCP (WiFi/Ethernet adapters)
+- 🔌 **TCP connection** - WiFi/Ethernet adapters for reliable communication
 - 📈 **Energy dashboard ready** - Automatic integration with HA Energy Dashboard
 - 🎯 **Official registers** - Uses verified Growatt protocol documentation
 - 🌡️ **Complete diagnostics** - Temperatures, fault codes, derating status
 - 💾 **No cloud dependency** - Local polling, your data stays yours
+- 🔄 **Grid power inversion** - Fix backwards CT clamp installations with one click
+- 🎛️ **Multi-model support** - Profiles for MIN, MID, MAX, SPH, and MOD series
 
 ---
 
-## 🔌 Supported Models
+## 🔌 Supported Inverter Models
 
-Based on Growatt MIN-10000-TL-X Modbus Register Map (Protocol V1.39):
+The integration supports multiple Growatt inverter series with dedicated register maps:
 
+| Inverter Series | Model Range | Type | Phase | Tested | Notes |
+|----------------|-------------|------|-------|--------|-------|
+| **MIN 3000-6000TL-X** | 3000-6000TL-X | Grid-tied | Single | ⚠️ Untested | 2 PV strings, 3-6kW |
+| **MIN 7000-10000TL-X** | 7000-10000TL-X | Grid-tied | Single | ✅ **Tested** | 3 PV strings, 7-10kW |
+| **MID 15000-25000TL3-X** | 15000-25000TL3-X | Grid-tied | Three | ⚠️ Untested | Commercial, 15-25kW |
+| **MAX 50000-125000TL3-X** | 50000-125000TL3-X | Grid-tied | Three | ⚠️ Untested | Industrial, 50-125kW |
+| **SPH 3000-10000** | SPH 3000-10000 | Hybrid | Single | ⚠️ Untested | Battery storage, 3-10kW |
+| **MOD 6000-15000TL3-XH** | MOD 6000-15000TL3-XH | Hybrid | Three | ⚠️ Untested | 3-phase hybrid, 6-15kW |
 
-| Model Range      | Status        | Notes                  |
-| ------------------ | --------------- | ------------------------ |
-| MIN-3000TL-X     | ✅ Supported  | Single-phase grid-tied |
-| MIN-4000TL-X     | ✅ Supported  | Single-phase grid-tied |
-| MIN-5000TL-X     | ✅ Supported  | Single-phase grid-tied |
-| MIN-6000TL-X     | ✅ Supported  | Single-phase grid-tied |
-| MIN-7000TL-X     | ✅ Supported  | Single-phase grid-tied |
-| MIN-8000TL-X     | ✅ Supported  | Single-phase grid-tied |
-| MIN-9000TL-X     | ✅ Supported  | Single-phase grid-tied |
-| MIN-10000TL-X    | ✅ Supported  | Single-phase grid-tied |
-| MIN-TL-XH Series | ✅ Supported  | Three-phase models     |
-| Other Growatt    | ⚠️ May work | Use base range mapping |
+**Legend:**
+- ✅ **Tested** - Confirmed working with real hardware
+- ⚠️ **Untested** - Profile created from documentation, needs validation
 
-All models support both base (0-124) and storage (3000-3124) register ranges.
+> 💡 **Help us test!** If you have a model marked as untested and can confirm it works, please open an issue or PR to update the documentation!
+
+---
+
+## 📊 Sensor Availability by Model
+
+Different inverter models create different sensors based on their capabilities:
+
+| Sensor | MIN 3-6k | MIN 7-10k | MID | MAX | SPH | MOD |
+|--------|:--------:|:---------:|:---:|:---:|:---:|:---:|
+| **Solar Input** |
+| PV1 Voltage/Current/Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PV2 Voltage/Current/Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PV3 Voltage/Current/Power | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Solar Total Power | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **AC Output (Single-Phase)** |
+| AC Voltage/Current/Power | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| AC Frequency | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| **AC Output (Three-Phase)** |
+| AC Phase A/B/C Voltage | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| AC Phase A/B/C Current | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| AC Phase A/B/C Power | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| AC Total Power | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| **Grid Power (Calculated)** |
+| Grid Export Power | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Grid Import Power | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Self Consumption | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| House Consumption | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Grid Power (From Registers)** |
+| Power to Grid | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Power to Load | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Power to User | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Battery (Hybrid Only)** |
+| Battery Voltage/Current/Power | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Battery SOC | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Battery Temperature | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Energy Totals** |
+| Energy Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Energy to Grid Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Load Energy Today/Total | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **System & Diagnostics** |
+| Inverter Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| IPM Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Boost Temperature | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Status/Derating/Faults | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**Legend:**
+- ✅ Available for this model
+- ❌ Not available (hardware limitation)
+
+> 📝 **Note:** Hybrid models (SPH/MOD) have power flow measured directly from registers. Grid-tied models (MIN/MID/MAX) calculate power flow from solar production vs AC output.
 
 ---
 
@@ -50,21 +101,18 @@ All models support both base (0-124) and storage (3000-3124) register ranges.
 
 ### Inverter Connection
 
-Growatt inverters have a **SYS/COM port**  on the bottom. It is likely that your inverter install ran a small cable only connecting the 2 pins to the smart meter. There should be space to put another cable through the gland to connect the RS485 adapter. You need to connect to **pins 3 & 4**. Conveniently, the terminals are just small screw terminals so no special tool/pins are required.
+Growatt inverters have a **SYS/COM port** on the bottom. It is likely that your inverter install ran a small cable only connecting the 2 pins to the smart meter. There should be space to put another cable through the gland to connect the RS485 adapter. You need to connect to **pins 3 & 4**. Conveniently, the terminals are just small screw terminals so no special tool/pins are required.
 
 ### Connection Hardware
 
-#### TCP Connection (Recommended) 🌐
-
 Use an RS485-to-TCP/WiFi adapter:
 
-
-| Adapter                    | Connection                 | Settings                        |
-| ---------------------------- | ---------------------------- | --------------------------------- |
-| **EW11**                   | RS485 A/B to adapter D+/D- | TCP Server, 9600 baud, port 502 |
-| **USR-W630**               | RS485 A/B to adapter A/B   | Modbus TCP Gateway mode         |
-| **USR-TCP232-410s**        | RS485 A/B to adapter A/B   | TCP Server, 9600 baud, port 502 |
-| **Waveshare RS485-to-ETH** | RS485 A/B to adapter A/B   | Modbus TCP mode, 9600 baud      |
+| Adapter | Connection | Settings |
+|---------|------------|----------|
+| **EW11** | RS485 A/B to adapter D+/D- | TCP Server, 9600 baud, port 502 |
+| **USR-W630** | RS485 A/B to adapter A/B | Modbus TCP Gateway mode |
+| **USR-TCP232-410s** | RS485 A/B to adapter A/B | TCP Server, 9600 baud, port 502 |
+| **Waveshare RS485-to-ETH** | RS485 A/B to adapter A/B | Modbus TCP mode, 9600 baud |
 
 **Wiring:**
 
@@ -116,26 +164,60 @@ Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **Add Integration** → Search for **Growatt Modbus**
-3. Enter a name for your inverter (e.g., "Growatt Inverter")
+3. Select your **Inverter Series** from the dropdown
+4. Enter your TCP connection details
 
-### Connection Type
+### Inverter Series Selection
 
-#### TCP Configuration
+| Selection | When to Use |
+|-----------|-------------|
+| **MIN 3000-6000TL-X** | 2 PV string models (3-6kW single-phase) |
+| **MIN 7000-10000TL-X** | 3 PV string models (7-10kW single-phase) |
+| **MID 15000-25000TL3-X** | Commercial 3-phase grid-tied (15-25kW) |
+| **MAX 50000-125000TL3-X** | Industrial 3-phase grid-tied (50-125kW) |
+| **SPH 3000-10000** | Single-phase hybrid with battery (3-10kW) |
+| **MOD 6000-15000TL3-XH** | 3-phase hybrid with battery (6-15kW) |
+
+### TCP Connection Settings
 
 - **Host**: IP address of your RS485-TCP adapter (e.g., `192.168.1.100`)
 - **Port**: `502` (standard Modbus TCP port)
 - **Slave ID**: `1` (check inverter display if unsure)
-- **Register Map**: `MIN_10000_TL_X_OFFICIAL` (recommended)
 
-### Register Maps
+---
 
+## 🔧 Configuration Options
 
-| Map Name                    | Description                                   | Use When                          |
-| ----------------------------- | ----------------------------------------------- | ----------------------------------- |
-| **MIN_10000_TL_X_OFFICIAL** | Official Growatt V1.39 protocol (3000+ range) | Default choice for all MIN series |
-| **MIN_SERIES_BASE_RANGE**   | Alternative addressing (0-124 range)          | If official map doesn't work      |
+Access via **Settings** → **Devices & Services** → **Growatt Modbus** → **Configure**:
 
-> 💡 **Migration:** Old register maps (`MIN_10000_VARIANT_A`, `MIN_10000_CORRECTED`) automatically upgrade to the official mapping.
+| Option | Default | Range | Description |
+|--------|---------|-------|-------------|
+| **Device Name** | "Growatt" | - | Friendly name (appears before all sensor names) |
+| **Scan Interval** | 30 seconds | 5-300s | How often to poll inverter |
+| **Connection Timeout** | 10 seconds | 1-60s | How long to wait for responses |
+| **Invert Grid Power** 🆕 | OFF | ON/OFF | **Reverse import/export if CT clamp backwards** |
+
+### 🔄 Invert Grid Power (New in v0.0.2!)
+
+Got your CT clamp installed backwards? No problem! Just enable this option:
+
+**When to use:**
+- Your "Grid Import" shows power when exporting to grid
+- Your "Grid Export" shows power when importing from grid
+- Grid power values are the opposite of what they should be
+
+**What it does:**
+- Automatically flips the sign of grid power measurements
+- Swaps Grid Import ⬌ Grid Export sensor values
+- Applies to both power (W) and energy (kWh) sensors
+- No need for template sensors or workarounds!
+
+**How to enable:**
+1. Go to **Growatt Modbus** integration → **Configure**
+2. Toggle **Invert Grid Power** to ON
+3. Changes apply on next update (within scan interval)
+
+> 💡 **Tip:** 30 seconds scan interval is recommended. Faster polling provides minimal benefit and may stress the inverter.
 
 ---
 
@@ -143,86 +225,116 @@ Growatt COM Pin 4 (B) ──────► Adapter RS485-B (or D-)
 
 ### Solar Input (PV Strings)
 
-
-| Entity ID                         | Name              | Unit | Description           |
-| ----------------------------------- | ------------------- | ------ | ----------------------- |
-| `sensor.{name}_pv1_voltage`       | PV1 Voltage       | V    | String 1 DC voltage   |
-| `sensor.{name}_pv1_current`       | PV1 Current       | A    | String 1 DC current   |
-| `sensor.{name}_pv1_power`         | PV1 Power         | W    | String 1 power output |
-| `sensor.{name}_pv2_voltage`       | PV2 Voltage       | V    | String 2 DC voltage   |
-| `sensor.{name}_pv2_current`       | PV2 Current       | A    | String 2 DC current   |
-| `sensor.{name}_pv2_power`         | PV2 Power         | W    | String 2 power output |
-| `sensor.{name}_solar_total_power` | Solar Total Power | W    | Combined PV power     |
+| Entity ID | Name | Unit | Description |
+|-----------|------|------|-------------|
+| `sensor.{name}_pv1_voltage` | PV1 Voltage | V | String 1 DC voltage |
+| `sensor.{name}_pv1_current` | PV1 Current | A | String 1 DC current |
+| `sensor.{name}_pv1_power` | PV1 Power | W | String 1 power output |
+| `sensor.{name}_pv2_voltage` | PV2 Voltage | V | String 2 DC voltage |
+| `sensor.{name}_pv2_current` | PV2 Current | A | String 2 DC current |
+| `sensor.{name}_pv2_power` | PV2 Power | W | String 2 power output |
+| `sensor.{name}_pv3_voltage` | PV3 Voltage | V | String 3 DC voltage (MIN 7-10k, MID, MAX, MOD only) |
+| `sensor.{name}_pv3_current` | PV3 Current | A | String 3 DC current (MIN 7-10k, MID, MAX, MOD only) |
+| `sensor.{name}_pv3_power` | PV3 Power | W | String 3 power output (MIN 7-10k, MID, MAX, MOD only) |
+| `sensor.{name}_solar_total_power` | Solar Total Power | W | Combined PV power |
 
 **Attributes:**
-
 - `firmware_version` - Inverter firmware
 - `serial_number` - Inverter serial number
 - `last_successful_update` - Last time inverter responded
 
-### AC Output
+### AC Output (Single-Phase Models)
 
+| Entity ID | Name | Unit | Description |
+|-----------|------|------|-------------|
+| `sensor.{name}_ac_voltage` | AC Voltage | V | Grid voltage |
+| `sensor.{name}_ac_current` | AC Current | A | AC output current |
+| `sensor.{name}_ac_power` | AC Power | W | AC output power |
+| `sensor.{name}_ac_frequency` | AC Frequency | Hz | Grid frequency |
 
-| Entity ID                    | Name         | Unit | Description       |
-| ------------------------------ | -------------- | ------ | ------------------- |
-| `sensor.{name}_ac_voltage`   | AC Voltage   | V    | Grid voltage      |
-| `sensor.{name}_ac_current`   | AC Current   | A    | AC output current |
-| `sensor.{name}_ac_power`     | AC Power     | W    | AC output power   |
-| `sensor.{name}_ac_frequency` | AC Frequency | Hz   | Grid frequency    |
+### AC Output (Three-Phase Models)
 
-### Power Flow (Calculated)
+| Entity ID | Name | Unit | Description |
+|-----------|------|------|-------------|
+| `sensor.{name}_ac_voltage_a` | AC Voltage Phase A | V | Phase A voltage |
+| `sensor.{name}_ac_voltage_b` | AC Voltage Phase B | V | Phase B voltage |
+| `sensor.{name}_ac_voltage_c` | AC Voltage Phase C | V | Phase C voltage |
+| `sensor.{name}_ac_current_a` | AC Current Phase A | A | Phase A current |
+| `sensor.{name}_ac_current_b` | AC Current Phase B | A | Phase B current |
+| `sensor.{name}_ac_current_c` | AC Current Phase C | A | Phase C current |
+| `sensor.{name}_ac_power_a` | AC Power Phase A | W | Phase A power |
+| `sensor.{name}_ac_power_b` | AC Power Phase B | W | Phase B power |
+| `sensor.{name}_ac_power_c` | AC Power Phase C | W | Phase C power |
+| `sensor.{name}_ac_power_total` | AC Total Power | W | Total 3-phase power |
+| `sensor.{name}_ac_frequency` | AC Frequency | Hz | Grid frequency |
 
+### Power Flow - Calculated (Grid-Tied Models)
 
-| Entity ID                         | Name              | Unit | Description               |
-| ----------------------------------- | ------------------- | ------ | --------------------------- |
-| `sensor.{name}_grid_export_power` | Grid Export Power | W    | Power sent to grid        |
-| `sensor.{name}_grid_import_power` | Grid Import Power | W    | Power drawn from grid     |
-| `sensor.{name}_self_consumption`  | Self Consumption  | W    | Solar power used directly |
-| `sensor.{name}_house_consumption` | House Consumption | W    | Total house load          |
+| Entity ID | Name | Unit | Description |
+|-----------|------|------|-------------|
+| `sensor.{name}_grid_power` | Grid Power | W | **Signed** grid power (+export / -import) |
+| `sensor.{name}_grid_export_power` | Grid Export Power | W | Power sent to grid (positive only) |
+| `sensor.{name}_grid_import_power` | Grid Import Power | W | Power drawn from grid (positive only) |
+| `sensor.{name}_self_consumption` | Self Consumption | W | Solar power used directly |
+| `sensor.{name}_house_consumption` | House Consumption | W | Total house load |
+
+> 🔄 **Affected by "Invert Grid Power" option** - Enable if values are backwards!
+
+**Grid Power Signs:**
+- **Positive** (+1500W) = Exporting to grid
+- **Negative** (-1200W) = Importing from grid
+- **Zero** (0W) = No grid interaction (perfect self-consumption)
 
 **Attributes:**
-
 - `solar_production` - Current solar generation
 - `grid_export` - Power exported to grid
 - `house_load` - Current house consumption
 - `self_consumption_percentage` - % of solar self-consumed
 
-### Power Flow (Storage/Hybrid Models)
+### Power Flow - From Registers (Hybrid Models)
 
+| Entity ID | Name | Unit | Description |
+|-----------|------|------|-------------|
+| `sensor.{name}_power_to_grid` | Power to Grid | W | Export power (from registers) |
+| `sensor.{name}_power_to_load` | Power to Load | W | Power to house load |
+| `sensor.{name}_power_to_user` | Power to User | W | Forward power |
 
-| Entity ID                     | Name          | Unit | Description                   |
-| ------------------------------- | --------------- | ------ | ------------------------------- |
-| `sensor.{name}_power_to_grid` | Power to Grid | W    | Export power (from registers) |
-| `sensor.{name}_power_to_load` | Power to Load | W    | Power to house load           |
-| `sensor.{name}_power_to_user` | Power to User | W    | Forward power                 |
+### Battery (Hybrid Models Only)
+
+| Entity ID | Name | Unit | Description |
+|-----------|------|------|-------------|
+| `sensor.{name}_battery_voltage` | Battery Voltage | V | Battery pack voltage |
+| `sensor.{name}_battery_current` | Battery Current | A | Battery charge/discharge current |
+| `sensor.{name}_battery_power` | Battery Power | W | Battery power (+ charging, - discharging) |
+| `sensor.{name}_battery_soc` | Battery SOC | % | State of charge |
+| `sensor.{name}_battery_temp` | Battery Temperature | °C | Battery temperature |
 
 ### Energy
 
+| Entity ID | Name | Unit | Description |
+|-----------|------|------|-------------|
+| `sensor.{name}_energy_today` | Energy Today | kWh | Today's production |
+| `sensor.{name}_energy_total` | Energy Total | kWh | Lifetime production |
+| `sensor.{name}_energy_to_grid_today` | Energy to Grid Today | kWh | Today's export |
+| `sensor.{name}_energy_to_grid_total` | Energy to Grid Total | kWh | Lifetime export |
+| `sensor.{name}_load_energy_today` | Load Energy Today | kWh | Today's consumption |
+| `sensor.{name}_load_energy_total` | Load Energy Total | kWh | Lifetime consumption |
 
-| Entity ID                            | Name                 | Unit | Description          |
-| -------------------------------------- | ---------------------- | ------ | ---------------------- |
-| `sensor.{name}_energy_today`         | Energy Today         | kWh  | Today's production   |
-| `sensor.{name}_energy_total`         | Energy Total         | kWh  | Lifetime production  |
-| `sensor.{name}_energy_to_grid_today` | Energy to Grid Today | kWh  | Today's export       |
-| `sensor.{name}_energy_to_grid_total` | Energy to Grid Total | kWh  | Lifetime export      |
-| `sensor.{name}_load_energy_today`    | Load Energy Today    | kWh  | Today's consumption  |
-| `sensor.{name}_load_energy_total`    | Load Energy Total    | kWh  | Lifetime consumption |
+> 🔄 **Grid energy sensors affected by "Invert Grid Power" option**
 
 ### System & Diagnostics
 
-
-| Entity ID                     | Name                 | Unit | Description              |
-| ------------------------------- | ---------------------- | ------ | -------------------------- |
-| `sensor.{name}_inverter_temp` | Inverter Temperature | °C  | Internal temperature     |
-| `sensor.{name}_ipm_temp`      | IPM Temperature      | °C  | Power module temp        |
-| `sensor.{name}_boost_temp`    | Boost Temperature    | °C  | Boost converter temp     |
-| `sensor.{name}_status`        | Status               | -    | Operating status         |
-| `sensor.{name}_derating_mode` | Derating Mode        | -    | Power reduction status   |
-| `sensor.{name}_fault_code`    | Fault Code           | -    | Current fault (if any)   |
-| `sensor.{name}_warning_code`  | Warning Code         | -    | Current warning (if any) |
+| Entity ID | Name | Unit | Description |
+|-----------|------|------|-------------|
+| `sensor.{name}_inverter_temp` | Inverter Temperature | °C | Internal temperature |
+| `sensor.{name}_ipm_temp` | IPM Temperature | °C | Power module temp |
+| `sensor.{name}_boost_temp` | Boost Temperature | °C | Boost converter temp |
+| `sensor.{name}_status` | Status | - | Operating status |
+| `sensor.{name}_derating_mode` | Derating Mode | - | Power reduction status |
+| `sensor.{name}_fault_code` | Fault Code | - | Current fault (if any) |
+| `sensor.{name}_warning_code` | Warning Code | - | Current warning (if any) |
 
 **Status Values:**
-
 - `Waiting` - Waiting for sufficient PV power or grid
 - `Normal` - Operating normally
 - `Fault` - Fault condition detected
@@ -239,28 +351,36 @@ Sensors are automatically configured for the Energy Dashboard:
 ### Recommended Configuration
 
 **Solar Production:**
-
 ```
 sensor.{name}_solar_total_power
 ```
 
 **Grid Export:**
-
 ```
 sensor.{name}_grid_export_power
 ```
 
 **Grid Import:**
-
 ```
 sensor.{name}_grid_import_power
 ```
 
 **Home Consumption:**
-
 ```
 sensor.{name}_house_consumption
 ```
+
+**Battery Charge (Hybrid models):**
+```
+sensor.{name}_battery_power  (when positive)
+```
+
+**Battery Discharge (Hybrid models):**
+```
+sensor.{name}_battery_power  (when negative)
+```
+
+> 💡 **Tip:** If your grid values are backwards, enable **Invert Grid Power** in the integration options!
 
 ---
 
@@ -278,26 +398,11 @@ This prevents sensor unavailability cascades in your automations and dashboards!
 
 ---
 
-## 🔧 Configuration Options
-
-Access via **Settings** → **Devices & Services** → **Growatt Modbus** → **Configure**:
-
-
-| Option            | Default    | Description                   |
-| ------------------- | ------------ | ------------------------------- |
-| **Scan Interval** | 30 seconds | How often to poll inverter    |
-| **Register Map**  | Official   | Which register mapping to use |
-
-> 💡 **Tip:** 30 seconds is recommended. Faster polling provides minimal benefit and may stress the inverter.
-
----
-
 ## 🐛 Troubleshooting
 
 ### Connection Issues
 
 **TCP Connection:**
-
 ```bash
 # Test if adapter is reachable
 ping 192.168.1.100
@@ -311,22 +416,30 @@ telnet 192.168.1.100 502
 #### "Failed to connect to inverter"
 
 - ✅ Check wiring (A and B may need swapping)
-- ✅ Verify IP address
+- ✅ Verify IP address and port
 - ✅ Confirm inverter Modbus address (usually 1)
 - ✅ Ensure baud rate is 9600
 - ✅ Check if inverter has power (try during daytime)
+- ✅ Verify network connectivity to TCP adapter
 
-#### "Unknown register map"
+#### Grid power values are backwards
 
-- ✅ Integration auto-migrates old maps
-- ✅ Try `MIN_10000_TL_X_OFFICIAL` first
-- ✅ Fall back to `MIN_SERIES_BASE_RANGE` if needed
+- ✅ Enable **Invert Grid Power** option
+- ✅ Go to integration Configure menu
+- ✅ Toggle the option ON
+- ✅ Wait for next update (within scan interval)
+
+#### Wrong inverter series selected
+
+- ✅ Delete the integration
+- ✅ Re-add and select correct series
+- ✅ Sensor names may change based on capabilities
 
 #### Power values look wrong
 
 - ✅ Compare readings with inverter display
 - ✅ Check sensor attributes for calculation method
-- ✅ Try alternative register map
+- ✅ Verify correct inverter series selected
 - ✅ Enable DEBUG logging and check logs
 
 #### Sensors show "Unavailable"
@@ -334,7 +447,7 @@ telnet 192.168.1.100 502
 - ✅ Check if this is during night time (expected if first-time setup)
 - ✅ Wait for sunrise and inverter to power on
 - ✅ Check logs for connection errors
-- ✅ Verify network/serial connection
+- ✅ Verify TCP network connection
 
 ### Enable Debug Logging
 
@@ -355,12 +468,12 @@ logger:
 custom_components/growatt_modbus/
 ├── __init__.py              # Integration setup
 ├── binary_sensor.py         # Binary sensors (inverter connectivity)
-├── config_flow.py           # Configuration UI
-├── const.py                 # Register definitions (official V1.39)
+├── config_flow.py           # Configuration UI with inverter series selection
+├── const.py                 # Register definitions for all models (V1.39)
 ├── coordinator.py           # Data coordinator with night-time handling
 ├── growatt_modbus.py        # Modbus communication (pymodbus 2.x & 3.x)
 ├── manifest.json            # Integration metadata
-├── sensor.py                # Sensor platform with calculated values
+├── sensor.py                # Sensor platform with model-specific sensors
 ├── strings.json             # UI translations
 └── translations/
     └── en.json              # English translations
@@ -368,7 +481,7 @@ custom_components/growatt_modbus/
 
 ### Device Information
 
-All device metadata (firmware version, serial number, register map) is available in the **Device Info** section of the integration rather than as sensor attributes. This keeps sensor entities clean and follows Home Assistant best practices.
+All device metadata (firmware version, serial number, inverter series) is available in the **Device Info** section of the integration rather than as sensor attributes. This keeps sensor entities clean and follows Home Assistant best practices.
 
 To view device information:
 
@@ -378,74 +491,15 @@ To view device information:
 
 ---
 
-## 🔌 API Reference
+## 🆕 What's New in v0.0.2
 
-### GrowattData Class
-
-```python
-@dataclass
-class GrowattData:
-    # Solar Input
-    pv1_voltage: float        # V
-    pv1_current: float        # A
-    pv1_power: float          # W
-    pv2_voltage: float        # V
-    pv2_current: float        # A
-    pv2_power: float          # W
-    pv_total_power: float     # W
-  
-    # AC Output
-    ac_voltage: float         # V
-    ac_current: float         # A
-    ac_power: float           # W
-    ac_frequency: float       # Hz
-  
-    # Power Flow (storage/hybrid models)
-    power_to_user: float      # W
-    power_to_grid: float      # W (export)
-    power_to_load: float      # W
-  
-    # Energy & Status
-    energy_today: float       # kWh
-    energy_total: float       # kWh
-    energy_to_user_today: float    # kWh
-    energy_to_user_total: float    # kWh
-    energy_to_grid_today: float    # kWh
-    energy_to_grid_total: float    # kWh
-    load_energy_today: float       # kWh
-    load_energy_total: float       # kWh
-  
-    # Temperatures
-    inverter_temp: float      # °C
-    ipm_temp: float          # °C
-    boost_temp: float        # °C
-  
-    # Diagnostics
-    status: int              # 0=Waiting, 1=Normal, 3=Fault
-    derating_mode: int
-    fault_code: int
-    warning_code: int
-  
-    # Device Info
-    firmware_version: str
-    serial_number: str
-```
-
-### Register Maps
-
-Access via `REGISTER_MAPS` in `const.py`:
-
-```python
-from custom_components.growatt_modbus.const import REGISTER_MAPS
-
-# Available maps
-maps = REGISTER_MAPS.keys()
-# ['MIN_10000_TL_X_OFFICIAL', 'MIN_SERIES_BASE_RANGE']
-
-# Get register info
-reg_info = REGISTER_MAPS['MIN_10000_TL_X_OFFICIAL']
-input_regs = reg_info['input_registers']
-```
+- 🎛️ **Multi-Model Support** - Added profiles for MIN (3-6k & 7-10k), MID, MAX, SPH, and MOD series
+- 🔄 **Invert Grid Power Option** - Fix backwards CT clamp installations via UI toggle
+- 📊 **Model-Specific Sensors** - Only relevant sensors created based on inverter capabilities
+- ⚡ **Three-Phase Support** - Full support for MID, MAX, and MOD models
+- 🔋 **Battery Sensors** - Complete battery monitoring for SPH and MOD hybrid models
+- 🎨 **Enhanced Configuration UI** - Better inverter series selection with descriptions
+- 📝 **Improved Options Flow** - Device name, timeout, and grid power inversion settings
 
 ---
 
@@ -463,11 +517,24 @@ Contributions welcome! Here's how:
 ### Testing Checklist
 
 - ✅ Tested with actual Growatt hardware
-- ✅ Verified TCP Connection
+- ✅ Verified TCP connection
 - ✅ Checked night-time behavior (inverter offline)
 - ✅ Confirmed Energy Dashboard integration
-- ✅ Validated all sensors appear correctly
+- ✅ Validated all sensors appear correctly for your model
+- ✅ Tested options configuration changes
 - ✅ Reviewed logs for errors/warnings
+
+### Help Us Test More Models! 🧪
+
+We need community members with different inverter models to validate the untested profiles:
+
+- MIN 3000-6000TL-X series
+- MID 15000-25000TL3-X series
+- MAX 50000-125000TL3-X series
+- SPH 3000-10000 series
+- MOD 6000-15000TL3-XH series
+
+If you successfully test any of these, please report back via GitHub Issues!
 
 ---
 
@@ -483,6 +550,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - Built for the Home Assistant community
 - Tested by solar enthusiasts worldwide 🌍
 - Special thanks to all hardware testers and contributors
+- MIN-10000TL-X validation by [@0xAHA](https://github.com/0xAHA)
 
 ---
 
@@ -494,4 +562,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Made with ☀️ by [@0xAHA](https://github.com/0xAHA)**
+**Made with ☀️ and ☕ by [@0xAHA](https://github.com/0xAHA)**
+
+*Turning photons into data, one Modbus packet at a time!* ⚡
