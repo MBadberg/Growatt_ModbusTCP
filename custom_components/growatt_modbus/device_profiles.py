@@ -99,7 +99,7 @@ THREE_PHASE_SENSORS = {
 # ============================================================================
 
 MIN_3000_6000_TL_X = InverterProfile(
-    series="MIN_3000_6000_TL_X",
+    series="min_3000_6000_tl_x",
     name="MIN 3000-6000TL-X",
     description="MIN series 3kW-6kW single-phase string inverters (2 PV inputs)",
     register_map="MIN_3000_6000TL_X",
@@ -121,7 +121,7 @@ MIN_3000_6000_TL_X = InverterProfile(
 )
 
 MIN_7000_10000_TL_X = InverterProfile(
-    series="MIN_7000_10000_TL_X",
+    series="min_7000_10000_tl_x",
     name="MIN 7000-10000TL-X",
     description="MIN series 7kW-10kW single-phase string inverters (3 PV inputs)",
     register_map="MIN_7000_10000TL_X",
@@ -149,7 +149,7 @@ MIN_7000_10000_TL_X = InverterProfile(
 # ============================================================================
 
 MID_15000_25000_TL3_X = InverterProfile(
-    series="MID_15000_25000_TL3_X",
+    series="mid_15000_25000_tl3_x",
     name="MID 15000-25000TL3-X",
     description="MID series 15kW-25kW three-phase string inverters",
     register_map="MID_15000_25000TL3_X",
@@ -178,7 +178,7 @@ MID_15000_25000_TL3_X = InverterProfile(
 # ============================================================================
 
 MAX_50000_125000_TL3_X = InverterProfile(
-    series="MAX_50000_125000_TL3_X",
+    series="max_50000_125000_tl3_x",
     name="MAX 50000-125000TL3-X",
     description="MAX series 50kW-125kW commercial three-phase inverters",
     register_map="MAX_50000_125000TL3_X",
@@ -207,7 +207,7 @@ MAX_50000_125000_TL3_X = InverterProfile(
 # ============================================================================
 
 SPH_3000_10000 = InverterProfile(
-    series="SPH_3000_10000",
+    series="sph_3000_10000",
     name="SPH 3000-10000",
     description="SPH series 3kW-10kW single-phase hybrid inverters with battery",
     register_map="SPH_3000_10000",
@@ -236,7 +236,7 @@ SPH_3000_10000 = InverterProfile(
 # ============================================================================
 
 MOD_6000_15000_TL3_XH = InverterProfile(
-    series="MOD_6000_15000_TL3_XH",
+    series="mod_6000_15000_tl3_xh",
     name="MOD 6000-15000TL3-XH",
     description="MOD series 6kW-15kW three-phase hybrid inverters with battery",
     register_map="MOD_6000_15000TL3_XH",
@@ -267,20 +267,20 @@ MOD_6000_15000_TL3_XH = InverterProfile(
 
 INVERTER_PROFILES: Dict[str, InverterProfile] = {
     # MIN Series
-    "MIN_3000_6000_TL_X": MIN_3000_6000_TL_X,
-    "MIN_7000_10000_TL_X": MIN_7000_10000_TL_X,
+    "min_3000_6000_tl_x": MIN_3000_6000_TL_X,
+    "min_7000_10000_tl_x": MIN_7000_10000_TL_X,
     
     # MID Series
-    "MID_15000_25000_TL3_X": MID_15000_25000_TL3_X,
+    "mid_15000_25000_tl3_x": MID_15000_25000_TL3_X,
     
     # MAX Series
-    "MAX_50000_125000_TL3_X": MAX_50000_125000_TL3_X,
+    "max_50000_125000_tl3_x": MAX_50000_125000_TL3_X,
     
     # SPH Series (Hybrid/Storage)
-    "SPH_3000_10000": SPH_3000_10000,
+    "sph_3000_10000": SPH_3000_10000,
     
     # MOD Series (Modular Hybrid)
-    "MOD_6000_15000_TL3_XH": MOD_6000_15000_TL3_XH,
+    "mod_6000_15000_tl3_xh": MOD_6000_15000_TL3_XH,
 }
 
 

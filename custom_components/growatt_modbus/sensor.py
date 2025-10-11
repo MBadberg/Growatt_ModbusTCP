@@ -402,7 +402,7 @@ async def async_setup_entry(
         return
     
     # Get the inverter series profile
-    inverter_series = config_entry.data.get(CONF_INVERTER_SERIES, "MIN_7000_10000_TL_X")
+    inverter_series = config_entry.data.get(CONF_INVERTER_SERIES, "min_7000_10000_tl_x")
     available_sensors = get_sensors_for_profile(inverter_series)
     
     _LOGGER.info(

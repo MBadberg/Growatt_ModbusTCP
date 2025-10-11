@@ -48,7 +48,7 @@ class GrowattModbusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_schema = vol.Schema({
             vol.Required(CONF_NAME, default="Growatt"): str,
-            vol.Required(CONF_INVERTER_SERIES, default="MIN_7000_10000_TL_X"): vol.In(get_available_profiles()),
+            vol.Required(CONF_INVERTER_SERIES, default="min_7000_10000_tl_x"): vol.In(get_available_profiles()),
         })
 
         return self.async_show_form(

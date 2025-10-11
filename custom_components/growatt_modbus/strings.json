@@ -75,12 +75,12 @@
   "selector": {
     "inverter_series": {
       "options": {
-        "MIN_3000_6000_TL_X": "MIN 3000-6000TL-X (2 PV, 3-6kW)",
-        "MIN_7000_10000_TL_X": "MIN 7000-10000TL-X (3 PV, 7-10kW)",
-        "MID_15000_25000_TL3_X": "MID 15000-25000TL3-X (3-phase, 15-25kW)",
-        "MAX_50000_125000TL3_X": "MAX 50000-125000TL3-X (3-phase, 50-125kW)",
-        "SPH_3000_10000": "SPH 3000-10000 (Hybrid with battery, 3-10kW)",
-        "MOD_6000_15000_TL3_XH": "MOD 6000-15000TL3-XH (3-phase hybrid, 6-15kW)"
+        "min_3000_6000_tl_x": "MIN 3000-6000TL-X (2 PV, 3-6kW)",
+        "min_7000_10000_tl_x": "MIN 7000-10000TL-X (3 PV, 7-10kW)",
+        "mid_15000_25000_tl3_x": "MID 15000-25000TL3-X (3-phase, 15-25kW)",
+        "max_50000_125000_tl3_x": "MAX 50000-125000TL3-X (3-phase, 50-125kW)",
+        "sph_3000_10000": "SPH 3000-10000 (Hybrid with battery, 3-10kW)",
+        "mod_6000_15000_tl3_xh": "MOD 6000-15000TL3-XH (3-phase hybrid, 6-15kW)"
       }
     }
   }
