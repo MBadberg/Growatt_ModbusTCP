@@ -19,10 +19,14 @@ Hardware Setup:
 import time
 import logging
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, Union
 
 # Import register definitions
 from .const import REGISTER_MAPS, STATUS_CODES, combine_registers
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from pymodbus.client import ModbusTcpClient, ModbusSerialClient
 
 try:
     # For RS485-to-USB connection
@@ -92,7 +96,18 @@ class GrowattData:
     inverter_temp: float = 0.0        # °C
     ipm_temp: float = 0.0             # °C
     boost_temp: float = 0.0           # °C
-    
+
+    # Battery (storage/hybrid models)
+    battery_voltage: float = 0.0      # V
+    battery_soc: float = 0.0          # %
+    battery_temp: float = 0.0         # °C
+    charge_power: float = 0.0         # W
+    discharge_power: float = 0.0      # W
+    charge_energy_today: float = 0.0  # kWh
+    discharge_energy_today: float = 0.0  # kWh
+    charge_energy_total: float = 0.0  # kWh
+    discharge_energy_total: float = 0.0  # kWh
+        
     # Diagnostics
     status: int = 0                   # Inverter status
     derating_mode: int = 0
@@ -123,7 +138,7 @@ class GrowattModbus:
         """
         self.connection_type = connection_type
         self.slave_id = slave_id
-        self.client = None
+        self.client: Optional[Union['ModbusTcpClient', 'ModbusSerialClient']] = None
         self.last_read_time = 0
         self.min_read_interval = 1.0  # 1 second minimum between reads
         
@@ -303,57 +318,55 @@ class GrowattModbus:
             logger.debug(f"Exception reading holding registers (inverter may be offline): {e}")
             return None
 
-    def _get_register_value(self, address: int, signed: bool = False) -> Optional[float]:
+    def _get_register_value(self, address: int) -> Optional[float]:
         """
-        Get a scaled register value from cache
-        
-        Args:
-            address: Register address
-            signed: Whether to treat as signed 16-bit value
-        
-        Returns:
-            Scaled float value or None if not available
+        Get scaled value from register, handling 32-bit pairs automatically
         """
-        if address not in self._register_cache:
-            return None
-        
-        raw_value = self._register_cache[address]
         reg_info = self.register_map['input_registers'].get(address)
-        
         if not reg_info:
-            logger.warning(f"No register info for address {address}")
             return None
         
-        # Handle signed values
-        if signed or reg_info.get('signed', False):
-            if raw_value > 32767:
-                raw_value = raw_value - 65536
+        raw_value = self._register_cache.get(address)
+        if raw_value is None:
+            return None
         
-        # Check if this register is part of a 32-bit pair
-        if 'pair' in reg_info:
-            # This register should be combined with its pair
-            pair_address = reg_info['pair']
-            if pair_address not in self._register_cache:
-                logger.warning(f"Missing pair register {pair_address} for {address}")
-                return None
+        # Check if this is part of a 32-bit pair
+        pair_addr = reg_info.get('pair')
+        if pair_addr is not None:
+            # This register is part of a pair
+            # Determine if we're HIGH or LOW word
+            pair_info = self.register_map['input_registers'].get(pair_addr)
+            if not pair_info:
+                # Fallback to single register
+                scale = reg_info.get('scale', 1)
+                return raw_value * scale
             
-            pair_value = self._register_cache[pair_address]
-            
-            # Determine which is HIGH and which is LOW
-            # The register with the lower address is typically HIGH
-            if address < pair_address:
-                # This is HIGH word
-                combined = combine_registers(raw_value, pair_value)
+            # Check which register is HIGH and which is LOW
+            if address < pair_addr:
+                # Current address is HIGH, pair is LOW
+                high_value = raw_value
+                low_value = self._register_cache.get(pair_addr, 0)
+                combined_scale = pair_info.get('combined_scale', 1)
             else:
-                # This is LOW word
-                combined = combine_registers(pair_value, raw_value)
+                # Current address is LOW, pair is HIGH
+                low_value = raw_value
+                high_value = self._register_cache.get(pair_addr, 0)
+                combined_scale = reg_info.get('combined_scale', 1)
             
-            # Use combined_scale if available, otherwise fall back to scale
-            scale = reg_info.get('combined_scale', reg_info['scale'])
-            return combined * scale
+            # Combine 32-bit value
+            combined = (high_value << 16) | low_value
+            
+            # Handle signed values if specified
+            if reg_info.get('signed') or pair_info.get('signed'):
+                if combined > 0x7FFFFFFF:  # If sign bit is set
+                    combined = combined - 0x100000000
+            
+            return combined * combined_scale
+        
         else:
-            # Single 16-bit register
-            return raw_value * reg_info['scale']
+            # Single register, apply its scale
+            scale = reg_info.get('scale', 1)
+            return raw_value * scale
 
     def read_all_data(self) -> Optional[GrowattData]:
         """Read all relevant data from inverter"""
@@ -371,30 +384,50 @@ class GrowattModbus:
         min_addr = min(addresses)
         max_addr = max(addresses)
         
-        # For efficiency, read in chunks
-        # Most registers are in 3000-3110 range for official mapping
-        if min_addr >= 3000:
-            # Read main block (3000-3110)
-            registers = self.read_input_registers(3000, 111)
-            if registers is None:
-                logger.error("Failed to read main input register block")
-                return None
-            
-            # Populate cache
-            self._register_cache = {}
-            for i, value in enumerate(registers):
-                self._register_cache[3000 + i] = value
-        else:
-            # Base range mapping (0-124)
+        # Clear cache
+        self._register_cache = {}
+        
+        # Determine which ranges we need to read
+        # Check if we have registers in different ranges
+        has_base_range = any(0 <= addr < 1000 for addr in addresses)
+        has_storage_range = any(1000 <= addr < 2000 for addr in addresses)
+        has_3000_range = any(3000 <= addr < 4000 for addr in addresses)
+        
+        # Read base range (0-124) if needed - SPH models
+        if has_base_range:
+            logger.debug("Reading base range (0-124)")
             registers = self.read_input_registers(0, 125)
             if registers is None:
                 logger.error("Failed to read base input register block")
                 return None
             
             # Populate cache
-            self._register_cache = {}
             for i, value in enumerate(registers):
                 self._register_cache[i] = value
+        
+        # Read storage range (1000-1124) if needed - SPH/hybrid models with battery
+        if has_storage_range:
+            logger.debug("Reading storage range (1000-1124)")
+            registers = self.read_input_registers(1000, 125)
+            if registers is None:
+                logger.warning("Failed to read storage register block (battery data may be unavailable)")
+                # Don't return None - continue with what we have
+            else:
+                # Populate cache
+                for i, value in enumerate(registers):
+                    self._register_cache[1000 + i] = value
+        
+        # Read 3000 range if needed - MIN models
+        if has_3000_range:
+            logger.debug("Reading 3000 range (3000-3110)")
+            registers = self.read_input_registers(3000, 111)
+            if registers is None:
+                logger.error("Failed to read main input register block")
+                return None
+            
+            # Populate cache
+            for i, value in enumerate(registers):
+                self._register_cache[3000 + i] = value
         
         # Now extract values using the register map
         try:
@@ -485,6 +518,9 @@ class GrowattModbus:
             # Energy Breakdown (if available)
             self._read_energy_breakdown(data)
             
+            # Battery Data (if available - storage/hybrid models)
+            self._read_battery_data(data)
+            
             # Temperatures
             inverter_temp_addr = self._find_register_by_name('inverter_temp')
             ipm_temp_addr = self._find_register_by_name('ipm_temp')
@@ -509,7 +545,7 @@ class GrowattModbus:
             if warning_addr:
                 data.warning_code = int(self._get_register_value(warning_addr) or 0)
             
-            logger.debug(f"Read data: PV={data.pv_total_power}W (PV1={data.pv1_power}W, PV2={data.pv2_power}W, PV3={data.pv3_power}W), AC={data.ac_power}W, Temp={data.inverter_temp}°C")
+            logger.debug(f"Read data: PV={data.pv_total_power}W, AC={data.ac_power}W, Battery={getattr(data, 'battery_soc', 'N/A')}%, Temp={data.inverter_temp}°C")
             
         except Exception as e:
             logger.error(f"Error parsing register data: {e}", exc_info=True)
@@ -561,6 +597,87 @@ class GrowattModbus:
         except Exception as e:
             logger.debug(f"Energy breakdown not available: {e}")
     
+    def _read_battery_data(self, data: GrowattData) -> None:
+        """Read battery data (storage/hybrid models)"""
+        try:
+            # Battery voltage
+            addr = self._find_register_by_name('battery_voltage')
+            if addr:
+                data.battery_voltage = self._get_register_value(addr) or 0.0
+                logger.debug(f"Battery voltage from reg {addr}: {data.battery_voltage}V")
+            
+            # Battery SOC
+            addr = self._find_register_by_name('battery_soc')
+            if addr:
+                data.battery_soc = self._get_register_value(addr) or 0.0
+                logger.debug(f"Battery SOC from reg {addr}: {data.battery_soc}%")
+            
+            # Battery temperature
+            addr = self._find_register_by_name('battery_temp')
+            if addr:
+                data.battery_temp = self._get_register_value(addr) or 0.0
+                logger.debug(f"Battery temp from reg {addr}: {data.battery_temp}°C")
+            
+            # Charge power
+            addr = self._find_register_by_name('charge_power_low')
+            if addr:
+                raw_low = self._register_cache.get(addr, 0)
+                pair_addr = self._find_register_by_name('charge_power_high')
+                raw_high = self._register_cache.get(pair_addr, 0) if pair_addr else 0
+                data.charge_power = self._get_register_value(addr) or 0.0
+                logger.debug(f"Charge power: HIGH={raw_high} (reg {pair_addr}), LOW={raw_low} (reg {addr}) → {data.charge_power}W")
+            
+            # Discharge power
+            addr = self._find_register_by_name('discharge_power_low')
+            if addr:
+                raw_low = self._register_cache.get(addr, 0)
+                pair_addr = self._find_register_by_name('discharge_power_high')
+                raw_high = self._register_cache.get(pair_addr, 0) if pair_addr else 0
+                data.discharge_power = self._get_register_value(addr) or 0.0
+                logger.debug(f"Discharge power: HIGH={raw_high} (reg {pair_addr}), LOW={raw_low} (reg {addr}) → {data.discharge_power}W")
+            
+            # Charge energy today
+            addr = self._find_register_by_name('charge_energy_today_low')
+            if addr:
+                raw_low = self._register_cache.get(addr, 0)
+                pair_addr = self._find_register_by_name('charge_energy_today_high')
+                raw_high = self._register_cache.get(pair_addr, 0) if pair_addr else 0
+                data.charge_energy_today = self._get_register_value(addr) or 0.0
+                logger.debug(f"Charge energy today: HIGH={raw_high} (reg {pair_addr}), LOW={raw_low} (reg {addr}) → {data.charge_energy_today} kWh")
+            
+            # Discharge energy today
+            addr = self._find_register_by_name('discharge_energy_today_low')
+            if addr:
+                raw_low = self._register_cache.get(addr, 0)
+                pair_addr = self._find_register_by_name('discharge_energy_today_high')
+                raw_high = self._register_cache.get(pair_addr, 0) if pair_addr else 0
+                data.discharge_energy_today = self._get_register_value(addr) or 0.0
+                logger.debug(f"Discharge energy today: HIGH={raw_high} (reg {pair_addr}), LOW={raw_low} (reg {addr}) → {data.discharge_energy_today} kWh")
+            
+            # Charge energy total
+            addr = self._find_register_by_name('charge_energy_total_low')
+            if addr:
+                raw_low = self._register_cache.get(addr, 0)
+                pair_addr = self._find_register_by_name('charge_energy_total_high')
+                raw_high = self._register_cache.get(pair_addr, 0) if pair_addr else 0
+                data.charge_energy_total = self._get_register_value(addr) or 0.0
+                logger.debug(f"Charge energy total: HIGH={raw_high} (reg {pair_addr}), LOW={raw_low} (reg {addr}) → {data.charge_energy_total} kWh")
+            
+            # Discharge energy total
+            addr = self._find_register_by_name('discharge_energy_total_low')
+            if addr:
+                raw_low = self._register_cache.get(addr, 0)
+                pair_addr = self._find_register_by_name('discharge_energy_total_high')
+                raw_high = self._register_cache.get(pair_addr, 0) if pair_addr else 0
+                data.discharge_energy_total = self._get_register_value(addr) or 0.0
+                logger.debug(f"Discharge energy total: HIGH={raw_high} (reg {pair_addr}), LOW={raw_low} (reg {addr}) → {data.discharge_energy_total} kWh")
+            
+            if data.battery_voltage > 0:
+                logger.info(f"Battery summary: {data.battery_voltage}V, {data.battery_soc}%, {data.battery_temp}°C, Charge={data.charge_power}W, Discharge={data.discharge_power}W")
+            
+        except Exception as e:
+            logger.debug(f"Battery data not available: {e}")
+
     def _read_device_info(self, data: GrowattData) -> None:
         """Read device info from holding registers"""
         holding_regs = self.read_holding_registers(0, 20)

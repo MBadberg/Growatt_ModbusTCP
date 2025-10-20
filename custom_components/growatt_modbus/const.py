@@ -365,108 +365,104 @@ MID_15000_25000TL3_X = {
     }
 }
 
-# SPH Hybrid Series (Storage with battery)
+# SPH Hybrid Series (Storage with battery). Based off protocol v1.20
 SPH_3000_10000 = {
-    'name': 'SPH-3000-10000',
-    'description': 'Hybrid inverter with battery storage (3-10kW)',
-    'notes': 'Uses 0-124, 1000-1124 register ranges. Includes battery management.',
-    'input_registers': {
-        # ============================================================================
-        # BASE RANGE 0-124: PV Input and AC Output (same as MIN series)
-        # ============================================================================
-        
-        # System Status
-        0: {'name': 'inverter_status', 'scale': 1, 'unit': '', 'desc': '0=Waiting, 1=Normal, 3=Fault'},
-        
-        # PV Total Power (32-bit)
-        1: {'name': 'pv_total_power_high', 'scale': 1, 'unit': '', 'desc': 'Total PV power HIGH word', 'pair': 2},
-        2: {'name': 'pv_total_power_low', 'scale': 1, 'unit': '', 'desc': 'Total PV power LOW word', 'pair': 1, 'combined_scale': 0.1, 'combined_unit': 'W'},
-        
-        # PV String 1
-        3: {'name': 'pv1_voltage', 'scale': 0.1, 'unit': 'V', 'desc': 'PV1 DC voltage'},
-        4: {'name': 'pv1_current', 'scale': 0.1, 'unit': 'A', 'desc': 'PV1 DC current'},
-        5: {'name': 'pv1_power_high', 'scale': 1, 'unit': '', 'desc': 'PV1 power HIGH word', 'pair': 6},
-        6: {'name': 'pv1_power_low', 'scale': 1, 'unit': '', 'desc': 'PV1 power LOW word', 'pair': 5, 'combined_scale': 0.1, 'combined_unit': 'W'},
-        
-        # PV String 2
-        7: {'name': 'pv2_voltage', 'scale': 0.1, 'unit': 'V', 'desc': 'PV2 DC voltage'},
-        8: {'name': 'pv2_current', 'scale': 0.1, 'unit': 'A', 'desc': 'PV2 DC current'},
-        9: {'name': 'pv2_power_high', 'scale': 1, 'unit': '', 'desc': 'PV2 power HIGH word', 'pair': 10},
-        10: {'name': 'pv2_power_low', 'scale': 1, 'unit': '', 'desc': 'PV2 power LOW word', 'pair': 9, 'combined_scale': 0.1, 'combined_unit': 'W'},
-        
-        # AC Output
-        37: {'name': 'ac_frequency', 'scale': 0.01, 'unit': 'Hz', 'desc': 'AC frequency'},
-        38: {'name': 'ac_voltage', 'scale': 0.1, 'unit': 'V', 'desc': 'AC voltage'},
-        39: {'name': 'ac_current', 'scale': 0.1, 'unit': 'A', 'desc': 'AC current'},
-        40: {'name': 'ac_power_high', 'scale': 1, 'unit': '', 'desc': 'AC power HIGH', 'pair': 41},
-        41: {'name': 'ac_power_low', 'scale': 1, 'unit': '', 'desc': 'AC power LOW', 'pair': 40, 'combined_scale': 0.1, 'combined_unit': 'VA'},
-        
-        # Energy
-        53: {'name': 'energy_today_high', 'scale': 1, 'unit': '', 'desc': 'Today energy HIGH', 'pair': 54},
-        54: {'name': 'energy_today_low', 'scale': 1, 'unit': '', 'desc': 'Today energy LOW', 'pair': 53, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        55: {'name': 'energy_total_high', 'scale': 1, 'unit': '', 'desc': 'Total energy HIGH', 'pair': 56},
-        56: {'name': 'energy_total_low', 'scale': 1, 'unit': '', 'desc': 'Total energy LOW', 'pair': 55, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        
-        # Temperatures
-        93: {'name': 'inverter_temp', 'scale': 0.1, 'unit': '°C'},
-        
+    "name": "SPH 3000-10000 (Hybrid Storage)",
+    "desc": "SPH series hybrid inverters with battery storage",
+    "input_registers": {
         # Status
-        105: {'name': 'fault_code', 'scale': 1, 'unit': ''},
-        112: {'name': 'warning_code', 'scale': 1, 'unit': ''},
+        0: {"name": "inverter_status", "scale": 1, "desc": "0=Waiting, 1=Normal, 3=Fault, 5=Standby"},
         
-        # ============================================================================
-        # STORAGE RANGE 1000-1124: Battery and Power Flow
-        # ============================================================================
+        # PV Inputs - Base Range
+        1: {"name": "pv_total_power_high", "scale": 1, "desc": "Total PV power HIGH word", "pair": 2},
+        2: {"name": "pv_total_power_low", "scale": 1, "desc": "Total PV power LOW word", "combined_scale": 0.1},
+        3: {"name": "pv1_voltage", "scale": 0.1, "desc": "PV1 DC voltage"},
+        4: {"name": "pv1_current", "scale": 0.1, "desc": "PV1 DC current"},
+        5: {"name": "pv1_power_high", "scale": 1, "desc": "PV1 power HIGH word", "pair": 6},
+        6: {"name": "pv1_power_low", "scale": 1, "desc": "PV1 power LOW word", "combined_scale": 0.1},
+        7: {"name": "pv2_voltage", "scale": 0.1, "desc": "PV2 DC voltage"},
+        8: {"name": "pv2_current", "scale": 0.1, "desc": "PV2 DC current"},
+        9: {"name": "pv2_power_high", "scale": 1, "desc": "PV2 power HIGH word", "pair": 10},
+        10: {"name": "pv2_power_low", "scale": 1, "desc": "PV2 power LOW word", "combined_scale": 0.1},
         
-        # System Work Mode
-        1000: {'name': 'system_work_mode', 'scale': 1, 'unit': '', 'desc': 'Work mode'},
+        # AC Output - CORRECTED LOCATION (was wrong at 1003-1006)
+        37: {"name": "ac_frequency", "scale": 0.01, "desc": "AC frequency"},
+        38: {"name": "ac_voltage", "scale": 0.1, "desc": "AC voltage"},
+        39: {"name": "ac_current", "scale": 0.1, "desc": "AC current"},
+        40: {"name": "ac_power_high", "scale": 1, "desc": "AC power HIGH", "pair": 41},
+        41: {"name": "ac_power_low", "scale": 1, "desc": "AC power LOW", "combined_scale": 0.1},
         
-        # Battery Discharge/Charge Power
-        1009: {'name': 'discharge_power_high', 'scale': 1, 'unit': '', 'pair': 1010},
-        1010: {'name': 'discharge_power_low', 'scale': 1, 'unit': '', 'pair': 1009, 'combined_scale': 0.1, 'combined_unit': 'W'},
-        1011: {'name': 'charge_power_high', 'scale': 1, 'unit': '', 'pair': 1012},
-        1012: {'name': 'charge_power_low', 'scale': 1, 'unit': '', 'pair': 1011, 'combined_scale': 0.1, 'combined_unit': 'W'},
+        # Energy - Base Range
+        53: {"name": "energy_today_high", "scale": 1, "desc": "Today energy HIGH", "pair": 54},
+        54: {"name": "energy_today_low", "scale": 1, "desc": "Today energy LOW", "combined_scale": 0.1},
+        55: {"name": "energy_total_high", "scale": 1, "desc": "Total energy HIGH", "pair": 56},
+        56: {"name": "energy_total_low", "scale": 1, "desc": "Total energy LOW", "combined_scale": 0.1},
         
-        # Battery State
-        1013: {'name': 'battery_voltage', 'scale': 0.1, 'unit': 'V'},
-        1014: {'name': 'battery_soc', 'scale': 1, 'unit': '%'},
-        1040: {'name': 'battery_temp', 'scale': 0.1, 'unit': '°C'},
+        # Temperature
+        93: {"name": "inverter_temp", "scale": 0.1, "desc": "Inverter temperature"},
+        
+        # Diagnostics
+        105: {"name": "fault_code", "scale": 1, "desc": "Fault code"},
+        112: {"name": "warning_code", "scale": 1, "desc": "Warning code"},
+        
+        # ===== STORAGE RANGE (1000-1124) =====
+        
+        # System Mode
+        1000: {"name": "system_work_mode", "scale": 1, "desc": "Work mode"},
+        
+        # Battery Power Flow
+        1009: {"name": "discharge_power_high", "scale": 1, "desc": "Discharge power HIGH", "pair": 1010},
+        1010: {"name": "discharge_power_low", "scale": 1, "desc": "Discharge power LOW", "combined_scale": 0.1},
+        1011: {"name": "charge_power_high", "scale": 1, "desc": "Charge power HIGH", "pair": 1012},
+        1012: {"name": "charge_power_low", "scale": 1, "desc": "Charge power LOW", "combined_scale": 0.1},
+        
+        # Battery Status
+        1013: {"name": "battery_voltage", "scale": 0.1, "desc": "Battery voltage"},
+        1014: {"name": "battery_soc", "scale": 1, "desc": "Battery state of charge %"},
+        1040: {"name": "battery_temp", "scale": 0.1, "desc": "Battery temperature"},
+        1041: {"name": "battery_type", "scale": 1, "desc": "Battery type"},
         
         # Power Flow
-        1015: {'name': 'power_to_user_high', 'scale': 1, 'unit': '', 'pair': 1016},
-        1016: {'name': 'power_to_user_low', 'scale': 1, 'unit': '', 'pair': 1015, 'combined_scale': 0.1, 'combined_unit': 'W'},
-        1021: {'name': 'power_to_load_high', 'scale': 1, 'unit': '', 'pair': 1022},
-        1022: {'name': 'power_to_load_low', 'scale': 1, 'unit': '', 'pair': 1021, 'combined_scale': 0.1, 'combined_unit': 'W'},
-        1029: {'name': 'power_to_grid_high', 'scale': 1, 'unit': '', 'pair': 1030},
-        1030: {'name': 'power_to_grid_low', 'scale': 1, 'unit': '', 'pair': 1029, 'combined_scale': 0.1, 'combined_unit': 'W', 'signed': True},
+        1015: {"name": "power_to_user_high", "scale": 1, "desc": "Power to user HIGH", "pair": 1016},
+        1016: {"name": "power_to_user_low", "scale": 1, "desc": "Power to user LOW", "combined_scale": 0.1},
+        1021: {"name": "power_to_load_high", "scale": 1, "desc": "Load power HIGH", "pair": 1022},
+        1022: {"name": "power_to_load_low", "scale": 1, "desc": "Load power LOW", "combined_scale": 0.1},
+        1029: {"name": "power_to_grid_high", "scale": 1, "desc": "Grid power HIGH", "pair": 1030},
+        1030: {"name": "power_to_grid_low", "scale": 1, "desc": "Grid power LOW", "combined_scale": 0.1},
+        1037: {"name": "self_consumption_power_high", "scale": 1, "desc": "Self-consumption HIGH", "pair": 1038},
+        1038: {"name": "self_consumption_power_low", "scale": 1, "desc": "Self-consumption LOW", "combined_scale": 0.1},
+        1039: {"name": "self_consumption_percentage", "scale": 1, "desc": "Self-consumption %"},
         
-        # Energy Breakdown
-        1044: {'name': 'energy_to_user_today_high', 'scale': 1, 'unit': '', 'pair': 1045},
-        1045: {'name': 'energy_to_user_today_low', 'scale': 1, 'unit': '', 'pair': 1044, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1046: {'name': 'energy_to_user_total_high', 'scale': 1, 'unit': '', 'pair': 1047},
-        1047: {'name': 'energy_to_user_total_low', 'scale': 1, 'unit': '', 'pair': 1046, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1048: {'name': 'energy_to_grid_today_high', 'scale': 1, 'unit': '', 'pair': 1049},
-        1049: {'name': 'energy_to_grid_today_low', 'scale': 1, 'unit': '', 'pair': 1048, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1050: {'name': 'energy_to_grid_total_high', 'scale': 1, 'unit': '', 'pair': 1051},
-        1051: {'name': 'energy_to_grid_total_low', 'scale': 1, 'unit': '', 'pair': 1050, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1052: {'name': 'discharge_energy_today_high', 'scale': 1, 'unit': '', 'pair': 1053},
-        1053: {'name': 'discharge_energy_today_low', 'scale': 1, 'unit': '', 'pair': 1052, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1054: {'name': 'discharge_energy_total_high', 'scale': 1, 'unit': '', 'pair': 1055},
-        1055: {'name': 'discharge_energy_total_low', 'scale': 1, 'unit': '', 'pair': 1054, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1056: {'name': 'charge_energy_today_high', 'scale': 1, 'unit': '', 'pair': 1057},
-        1057: {'name': 'charge_energy_today_low', 'scale': 1, 'unit': '', 'pair': 1056, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1058: {'name': 'charge_energy_total_high', 'scale': 1, 'unit': '', 'pair': 1059},
-        1059: {'name': 'charge_energy_total_low', 'scale': 1, 'unit': '', 'pair': 1058, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1060: {'name': 'load_energy_today_high', 'scale': 1, 'unit': '', 'pair': 1061},
-        1061: {'name': 'load_energy_today_low', 'scale': 1, 'unit': '', 'pair': 1060, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
-        1062: {'name': 'load_energy_total_high', 'scale': 1, 'unit': '', 'pair': 1063},
-        1063: {'name': 'load_energy_total_low', 'scale': 1, 'unit': '', 'pair': 1062, 'combined_scale': 0.1, 'combined_unit': 'kWh'},
+        # Energy Totals
+        1044: {"name": "energy_to_user_today_high", "scale": 1, "desc": "Energy to user today HIGH", "pair": 1045},
+        1045: {"name": "energy_to_user_today_low", "scale": 1, "desc": "Energy to user today LOW", "combined_scale": 0.1},
+        1046: {"name": "energy_to_user_total_high", "scale": 1, "desc": "Energy to user total HIGH", "pair": 1047},
+        1047: {"name": "energy_to_user_total_low", "scale": 1, "desc": "Energy to user total LOW", "combined_scale": 0.1},
+        1048: {"name": "energy_to_grid_today_high", "scale": 1, "desc": "Energy to grid today HIGH", "pair": 1049},
+        1049: {"name": "energy_to_grid_today_low", "scale": 1, "desc": "Energy to grid today LOW", "combined_scale": 0.1},
+        1050: {"name": "energy_to_grid_total_high", "scale": 1, "desc": "Energy to grid total HIGH", "pair": 1051},
+        1051: {"name": "energy_to_grid_total_low", "scale": 1, "desc": "Energy to grid total LOW", "combined_scale": 0.1},
+        1052: {"name": "discharge_energy_today_high", "scale": 1, "desc": "Discharge today HIGH", "pair": 1053},
+        1053: {"name": "discharge_energy_today_low", "scale": 1, "desc": "Discharge today LOW", "combined_scale": 0.1},
+        1054: {"name": "discharge_energy_total_high", "scale": 1, "desc": "Discharge total HIGH", "pair": 1055},
+        1055: {"name": "discharge_energy_total_low", "scale": 1, "desc": "Discharge total LOW", "combined_scale": 0.1},
+        1056: {"name": "charge_energy_today_high", "scale": 1, "desc": "Charge today HIGH", "pair": 1057},
+        1057: {"name": "charge_energy_today_low", "scale": 1, "desc": "Charge today LOW", "combined_scale": 0.1},
+        1058: {"name": "charge_energy_total_high", "scale": 1, "desc": "Charge total HIGH", "pair": 1059},
+        1059: {"name": "charge_energy_total_low", "scale": 1, "desc": "Charge total LOW", "combined_scale": 0.1},
+        1060: {"name": "load_energy_today_high", "scale": 1, "desc": "Load today HIGH", "pair": 1061},
+        1061: {"name": "load_energy_today_low", "scale": 1, "desc": "Load today LOW", "combined_scale": 0.1},
+        1062: {"name": "load_energy_total_high", "scale": 1, "desc": "Load total HIGH", "pair": 1063},
+        1063: {"name": "load_energy_total_low", "scale": 1, "desc": "Load total LOW", "combined_scale": 0.1},
     },
-    'holding_registers': {
-        0: {'name': 'on_off', 'scale': 1, 'unit': '', 'access': 'RW'},
-        1008: {'name': 'system_enable', 'scale': 1, 'unit': '', 'access': 'RW'},
-        1044: {'name': 'priority', 'scale': 1, 'unit': '', 'access': 'RW', 'desc': '0=Load, 1=Battery, 2=Grid'},
-    }
+    "holding_registers": {
+        3: {"name": "firmware_version", "desc": "Firmware version"},
+        9: {"name": "serial_number_1", "desc": "Serial number part 1"},
+        10: {"name": "serial_number_2", "desc": "Serial number part 2"},
+        11: {"name": "serial_number_3", "desc": "Serial number part 3"},
+        12: {"name": "serial_number_4", "desc": "Serial number part 4"},
+        13: {"name": "serial_number_5", "desc": "Serial number part 5"},
+    },
 }
 
 # MAX Series (Commercial Three-phase, 50-125kW)
@@ -922,6 +918,7 @@ STATUS_CODES = {
     0: {'name': 'Waiting', 'desc': 'Waiting for sufficient PV power or grid conditions'},
     1: {'name': 'Normal', 'desc': 'Operating normally'},
     3: {'name': 'Fault', 'desc': 'Fault condition detected'},
+    5: {"name": "Standby", "icon": "mdi:sleep", "desc": "Inverter in standby mode"},
 }
 
 # Helper functions

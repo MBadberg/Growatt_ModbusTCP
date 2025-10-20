@@ -355,6 +355,106 @@ SENSOR_DEFINITIONS = {
         "condition": lambda data: data.boost_temp > 0,
     },
     
+    # Battery Sensors
+    "battery_voltage": {
+        "name": "Battery Voltage",
+        "icon": "mdi:battery-charging",
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfElectricPotential.VOLT,
+        "attr": "battery_voltage",
+        "condition": lambda data: data.battery_voltage > 0,
+    },
+    "battery_current": {
+        "name": "Battery Current",
+        "icon": "mdi:current-dc",
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "attr": "battery_current",
+        "condition": lambda data: hasattr(data, 'battery_current') and data.battery_current > 0,
+    },
+    "battery_soc": {
+        "name": "Battery SOC",
+        "icon": "mdi:battery",
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": PERCENTAGE,
+        "attr": "battery_soc",
+        "condition": lambda data: data.battery_soc > 0,
+    },
+    "battery_temp": {
+        "name": "Battery Temperature",
+        "icon": "mdi:thermometer",
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfTemperature.CELSIUS,
+        "attr": "battery_temp",
+        "condition": lambda data: hasattr(data, 'battery_temp'),
+    },
+    "battery_power": {
+        "name": "Battery Power",
+        "icon": "mdi:battery-charging",
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfPower.WATT,
+        "attr": "calculated",
+    },
+    "battery_charge_power": {
+        "name": "Battery Charge Power",
+        "icon": "mdi:battery-plus",
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfPower.WATT,
+        "attr": "charge_power",
+        "condition": lambda data: hasattr(data, 'charge_power'),
+    },
+    "battery_discharge_power": {
+        "name": "Battery Discharge Power",
+        "icon": "mdi:battery-minus",
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "unit": UnitOfPower.WATT,
+        "attr": "discharge_power",
+        "condition": lambda data: hasattr(data, 'discharge_power'),
+    },
+    "battery_charge_today": {
+        "name": "Battery Charge Today",
+        "icon": "mdi:battery-plus",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "attr": "charge_energy_today",
+        "condition": lambda data: hasattr(data, 'charge_energy_today') and data.charge_energy_today > 0,
+    },
+    "battery_discharge_today": {
+        "name": "Battery Discharge Today",
+        "icon": "mdi:battery-minus",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "attr": "discharge_energy_today",
+        "condition": lambda data: hasattr(data, 'discharge_energy_today') and data.discharge_energy_today > 0,
+    },
+    "battery_charge_total": {
+        "name": "Battery Charge Total",
+        "icon": "mdi:battery-plus",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "attr": "charge_energy_total",
+        "condition": lambda data: hasattr(data, 'charge_energy_total') and data.charge_energy_total > 0,
+    },
+    "battery_discharge_total": {
+        "name": "Battery Discharge Total",
+        "icon": "mdi:battery-minus",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "attr": "discharge_energy_total",
+        "condition": lambda data: hasattr(data, 'discharge_energy_total') and data.discharge_energy_total > 0,
+    },
+
     # System Sensors
     "status": {
         "name": "Status",
@@ -608,6 +708,21 @@ class GrowattModbusSensor(CoordinatorEntity, SensorEntity):
                 
                 raw_value = round(max(0, load), 1)
                 return self.coordinator.get_sensor_value(self._sensor_key, raw_value)
+            
+            elif self._sensor_key == "battery_power":
+                # Battery power: positive = charging, negative = discharging
+                charge_power = getattr(data, "charge_power", 0)
+                discharge_power = getattr(data, "discharge_power", 0)
+                
+                if charge_power > 0:
+                    raw_value = round(charge_power, 1)  # Positive for charging
+                elif discharge_power > 0:
+                    raw_value = round(-discharge_power, 1)  # Negative for discharging
+                else:
+                    raw_value = 0
+                
+                return self.coordinator.get_sensor_value(self._sensor_key, raw_value)
+            
             
             elif self._sensor_key == "grid_energy_today":
                 # Combined grid energy: positive=export, negative=import
