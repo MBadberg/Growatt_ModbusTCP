@@ -397,8 +397,8 @@ class GrowattModbusCoordinator(DataUpdateCoordinator[GrowattData]):
             if self._client:
                 try:
                     self._client.disconnect()
-                except:
-                    pass
+                except Exception as disconnect_err:
+                    _LOGGER.debug(f"Error during disconnect after read failure: {disconnect_err}")
             return {}
     
     async def async_write_holding_register(self, address: int, value: int) -> None:
@@ -438,8 +438,8 @@ class GrowattModbusCoordinator(DataUpdateCoordinator[GrowattData]):
             if self._client:
                 try:
                     self._client.disconnect()
-                except:
-                    pass
+                except Exception as disconnect_err:
+                    _LOGGER.debug(f"Error during disconnect after write failure: {disconnect_err}")
             return False
     
     async def async_load_holding_registers(self) -> None:
@@ -458,15 +458,24 @@ class GrowattModbusCoordinator(DataUpdateCoordinator[GrowattData]):
         if not addresses:
             return
         
-        # Read in chunks of up to 10 registers
-        chunk_size = 10
-        for i in range(0, len(addresses), chunk_size):
-            chunk_addresses = addresses[i:i + chunk_size]
-            start_addr = chunk_addresses[0]
-            end_addr = chunk_addresses[-1]
-            count = end_addr - start_addr + 1
-            
+        # Group consecutive addresses into chunks of up to 10 for efficient reading
+        consecutive_chunks = []
+        current_chunk = []
+        for addr in addresses:
+            if not current_chunk:
+                current_chunk = [addr]
+            elif addr == current_chunk[-1] + 1 and len(current_chunk) < 10:
+                current_chunk.append(addr)
+            else:
+                consecutive_chunks.append(current_chunk)
+                current_chunk = [addr]
+        if current_chunk:
+            consecutive_chunks.append(current_chunk)
+
+        for chunk in consecutive_chunks:
+            start_addr = chunk[0]
+            count = len(chunk)
             try:
                 await self.async_read_holding_registers(start_addr, count)
             except Exception as err:
-                _LOGGER.debug(f"Could not read holding registers {start_addr}-{end_addr}: {err}")
+                _LOGGER.debug(f"Could not read holding registers {start_addr}-{start_addr + count - 1}: {err}")

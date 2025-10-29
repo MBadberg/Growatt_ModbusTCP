@@ -1,6 +1,5 @@
 """Number platform for Growatt Modbus integration."""
 import logging
-from typing import Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
@@ -101,7 +100,6 @@ class GrowattModbusNumber(CoordinatorEntity, NumberEntity):
         """Return the current value."""
         try:
             # Try to read from coordinator data
-            register_name = self._register_info["name"]
             if hasattr(self.coordinator, "holding_register_cache"):
                 raw_value = self.coordinator.holding_register_cache.get(self._register_address)
                 if raw_value is not None:

@@ -385,12 +385,31 @@ SPH_3000_10000 = {
         9: {"name": "pv2_power_high", "scale": 1, "desc": "PV2 power HIGH word", "pair": 10},
         10: {"name": "pv2_power_low", "scale": 1, "desc": "PV2 power LOW word", "combined_scale": 0.1},
         
-        # AC Output - CORRECTED LOCATION (was wrong at 1003-1006)
+        # AC Output - Three Phase (SPH 10000 TL3 BH UP is three-phase)
         37: {"name": "ac_frequency", "scale": 0.01, "desc": "AC frequency"},
-        38: {"name": "ac_voltage", "scale": 0.1, "desc": "AC voltage"},
-        39: {"name": "ac_current", "scale": 0.1, "desc": "AC current"},
-        40: {"name": "ac_power_high", "scale": 1, "desc": "AC power HIGH", "pair": 41},
-        41: {"name": "ac_power_low", "scale": 1, "desc": "AC power LOW", "combined_scale": 0.1},
+        
+        # Phase R (L1)
+        38: {"name": "ac_voltage_r", "scale": 0.1, "desc": "Phase R voltage"},
+        39: {"name": "ac_current_r", "scale": 0.1, "desc": "Phase R current"},
+        40: {"name": "ac_power_r_high", "scale": 1, "desc": "Phase R power HIGH", "pair": 41},
+        41: {"name": "ac_power_r_low", "scale": 1, "desc": "Phase R power LOW", "combined_scale": 0.1},
+        
+        # Phase S (L2)
+        42: {"name": "ac_voltage_s", "scale": 0.1, "desc": "Phase S voltage"},
+        43: {"name": "ac_current_s", "scale": 0.1, "desc": "Phase S current"},
+        44: {"name": "ac_power_s_high", "scale": 1, "desc": "Phase S power HIGH", "pair": 45},
+        45: {"name": "ac_power_s_low", "scale": 1, "desc": "Phase S power LOW", "combined_scale": 0.1},
+        
+        # Phase T (L3)
+        46: {"name": "ac_voltage_t", "scale": 0.1, "desc": "Phase T voltage"},
+        47: {"name": "ac_current_t", "scale": 0.1, "desc": "Phase T current"},
+        48: {"name": "ac_power_t_high", "scale": 1, "desc": "Phase T power HIGH", "pair": 49},
+        49: {"name": "ac_power_t_low", "scale": 1, "desc": "Phase T power LOW", "combined_scale": 0.1},
+        
+        # Line voltages
+        50: {"name": "ac_voltage_rs", "scale": 0.1, "desc": "Line voltage R-S"},
+        51: {"name": "ac_voltage_st", "scale": 0.1, "desc": "Line voltage S-T"},
+        52: {"name": "ac_voltage_tr", "scale": 0.1, "desc": "Line voltage T-R"},
         
         # Energy - Base Range
         53: {"name": "energy_today_high", "scale": 1, "desc": "Today energy HIGH", "pair": 54},

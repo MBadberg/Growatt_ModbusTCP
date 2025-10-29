@@ -274,20 +274,21 @@ INVERTER_PROFILES = {
     },
     
     # ========================================================================
-    # SPH SERIES - Hybrid Storage (Single Phase with Battery)
+    # SPH SERIES - Hybrid Storage (Three Phase with Battery)
     # ========================================================================
     
     "sph_3000_10000": {
         "name": "SPH 3000-10000",
-        "description": "Hybrid inverter with battery storage (3-10kW)",
+        "description": "Three-phase hybrid inverter with battery storage (3-10kW, includes SPH 10000 TL3 BH UP)",
         "register_map": "SPH_3000_10000",
-        "phases": 1,
+        "phases": 3,  # Three-phase (TL3 = Three Level/Line 3-phase)
         "has_pv3": False,  # SPH typically has 2 PV inputs
         "has_battery": True,
         "max_power_kw": 10.0,
         "sensors": (
             BASIC_PV_SENSORS |
             BASIC_AC_SENSORS |
+            THREE_PHASE_SENSORS |  # Added three-phase sensor support
             GRID_SENSORS |
             POWER_FLOW_SENSORS |
             CONSUMPTION_SENSORS |

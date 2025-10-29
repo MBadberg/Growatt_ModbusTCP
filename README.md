@@ -45,7 +45,6 @@ The integration supports **14 different Growatt inverter profiles** with dedicat
 | ------------------------- | --------------------- | ------------ | --------------- | ---------------------------------- |
 | **TL-XH 3000-10000**    | TL-XH 3000-10000    | 3          | ⚠️ Untested | Hybrid with battery, 3-10kW      |
 | **TL-XH US 3000-10000** | TL-XH US 3000-10000 | 3          | ⚠️ Untested | US version hybrid, 3-10kW        |
-| **SPH 3000-10000**      | SPH 3000-10000      | 2          | ⚠️ Untested | Storage hybrid, 3-10kW           |
 | **MIX Series**          | Various             | 2          | ⚠️ Untested | Legacy storage (merged into SPH) |
 | **SPA Series**          | Various             | -          | ⚠️ Untested | AC-coupled storage               |
 
@@ -65,6 +64,7 @@ The integration supports **14 different Growatt inverter profiles** with dedicat
 
 | Inverter Series          | Model Range          | PV Strings | Tested        | Notes                        |
 | -------------------------- | ---------------------- | ------------ | --------------- | ------------------------------ |
+| **SPH 3000-10000**       | SPH 3000-10000       | 2          | ✅ **Tested** | Three-phase hybrid with battery, 3-10kW (includes SPH 10000 TL3 BH UP) |
 | **MOD 6000-15000TL3-XH** | MOD 6000-15000TL3-XH | 3          | ⚠️ Untested | Modular hybrid, 6-15kW       |
 | **WIT TL3 Series**       | WIT TL3              | 3+         | ⚠️ Untested | Business storage, up to 50kW |
 
@@ -219,7 +219,6 @@ Choose the profile that matches your inverter model:
 | ------------------------- | ------------------------------------------ |
 | **TL-XH 3000-10000**    | 3 PV string hybrid with battery (3-10kW) |
 | **TL-XH US 3000-10000** | US version 3 PV string hybrid (3-10kW)   |
-| **SPH 3000-10000**      | 2 PV string storage hybrid (3-10kW)      |
 | **MIX Series**          | Legacy storage system                    |
 | **SPA Series**          | AC-coupled storage system                |
 
@@ -239,6 +238,7 @@ Choose the profile that matches your inverter model:
 
 | Selection                | When to Use                           |
 | -------------------------- | --------------------------------------- |
+| **SPH 3000-10000**       | Three-phase hybrid with battery (3-10kW, includes SPH 10000 TL3 BH UP) |
 | **MOD 6000-15000TL3-XH** | Modular 3-phase hybrid (6-15kW)       |
 | **WIT TL3 Series**       | Business storage 3-phase (up to 50kW) |
 
