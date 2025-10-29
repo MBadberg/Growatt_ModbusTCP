@@ -400,6 +400,15 @@ SPH_3000_10000 = {
         
         # Temperature
         93: {"name": "inverter_temp", "scale": 0.1, "desc": "Inverter temperature"},
+        94: {"name": "ipm_temp", "scale": 0.1, "desc": "IPM temperature"},
+        95: {"name": "boost_temp", "scale": 0.1, "desc": "Boost temperature"},
+        
+        # Bus Voltages (DC bus)
+        98: {"name": "p_bus_voltage", "scale": 0.1, "desc": "P-bus voltage"},
+        99: {"name": "n_bus_voltage", "scale": 0.1, "desc": "N-bus voltage"},
+        
+        # Power Factor
+        100: {"name": "power_factor", "scale": 1, "desc": "Power factor (0-10000=underexcited, 10001-20000=overexcited)"},
         
         # Diagnostics
         105: {"name": "fault_code", "scale": 1, "desc": "Fault code"},
