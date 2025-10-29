@@ -5,6 +5,53 @@ All notable changes to the Growatt Modbus Integration will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.5] - 2025-10-29
+
+### Added - Writable Settings Support for SPH 10000 TL3 BH UP
+
+- **Number Platform**: Added support for writable numeric settings on hybrid inverters
+  - Battery charge/discharge time windows (hour and minute controls)
+  - AC charge power rate and SOC limit
+  - Battery discharge power rate and SOC limit
+  - Battery voltage limits (charge and discharge)
+- **Select Platform**: Added support for enum-based writable settings
+  - Priority mode (Load First, Battery First, Grid First)
+  - AC charge enable/disable
+  - Grid charge enable/disable
+  - Inverter on/off control
+- **Modbus Write Support**: Added write methods to GrowattModbus class
+  - `write_holding_register()` for single register writes
+  - `write_holding_registers()` for multiple register writes
+  - Compatibility with pymodbus 2.x and 3.x
+- **Coordinator Enhancements**: Added holding register cache and write methods
+  - `async_write_holding_register()` for async writes
+  - `async_read_holding_registers()` for reading current settings
+  - `async_load_holding_registers()` to populate cache on startup
+  - Holding register cache for tracking current settings
+- **SPH Register Map**: Expanded SPH_3000_10000 holding registers
+  - Priority mode control (register 1044)
+  - AC charging settings (registers 1090-1096)
+  - Battery discharge settings (registers 1100-1105)
+  - Battery voltage limits (registers 1110-1111)
+  - Grid charge control (register 1120)
+- **Documentation**: Comprehensive writable settings documentation
+  - Example automations for time-of-use optimization
+  - Dynamic priority based on solar production
+  - Peak shaving strategies
+  - Safety notes and supported models
+
+### Enhanced
+
+- **SPH 10000 TL3 BH UP Support**: Full compatibility confirmed
+  - All input registers properly mapped
+  - Battery data correctly read from storage range (1000-1124)
+  - Writable settings enable powerful automations
+
+### Compatibility
+
+- Supports SPH, TL-XH, MOD, and WIT series hybrid inverters
+- Grid-tied models (MIN, MID, MAC, MAX) have limited writable settings
+
 ## [1.0.0] - 2025-09-28
 
 ### Added

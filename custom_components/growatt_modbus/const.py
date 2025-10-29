@@ -385,12 +385,31 @@ SPH_3000_10000 = {
         9: {"name": "pv2_power_high", "scale": 1, "desc": "PV2 power HIGH word", "pair": 10},
         10: {"name": "pv2_power_low", "scale": 1, "desc": "PV2 power LOW word", "combined_scale": 0.1},
         
-        # AC Output - CORRECTED LOCATION (was wrong at 1003-1006)
+        # AC Output - Three Phase (SPH 10000 TL3 BH UP is three-phase)
         37: {"name": "ac_frequency", "scale": 0.01, "desc": "AC frequency"},
-        38: {"name": "ac_voltage", "scale": 0.1, "desc": "AC voltage"},
-        39: {"name": "ac_current", "scale": 0.1, "desc": "AC current"},
-        40: {"name": "ac_power_high", "scale": 1, "desc": "AC power HIGH", "pair": 41},
-        41: {"name": "ac_power_low", "scale": 1, "desc": "AC power LOW", "combined_scale": 0.1},
+        
+        # Phase R (L1)
+        38: {"name": "ac_voltage_r", "scale": 0.1, "desc": "Phase R voltage"},
+        39: {"name": "ac_current_r", "scale": 0.1, "desc": "Phase R current"},
+        40: {"name": "ac_power_r_high", "scale": 1, "desc": "Phase R power HIGH", "pair": 41},
+        41: {"name": "ac_power_r_low", "scale": 1, "desc": "Phase R power LOW", "combined_scale": 0.1},
+        
+        # Phase S (L2)
+        42: {"name": "ac_voltage_s", "scale": 0.1, "desc": "Phase S voltage"},
+        43: {"name": "ac_current_s", "scale": 0.1, "desc": "Phase S current"},
+        44: {"name": "ac_power_s_high", "scale": 1, "desc": "Phase S power HIGH", "pair": 45},
+        45: {"name": "ac_power_s_low", "scale": 1, "desc": "Phase S power LOW", "combined_scale": 0.1},
+        
+        # Phase T (L3)
+        46: {"name": "ac_voltage_t", "scale": 0.1, "desc": "Phase T voltage"},
+        47: {"name": "ac_current_t", "scale": 0.1, "desc": "Phase T current"},
+        48: {"name": "ac_power_t_high", "scale": 1, "desc": "Phase T power HIGH", "pair": 49},
+        49: {"name": "ac_power_t_low", "scale": 1, "desc": "Phase T power LOW", "combined_scale": 0.1},
+        
+        # Line voltages
+        50: {"name": "ac_voltage_rs", "scale": 0.1, "desc": "Line voltage R-S"},
+        51: {"name": "ac_voltage_st", "scale": 0.1, "desc": "Line voltage S-T"},
+        52: {"name": "ac_voltage_tr", "scale": 0.1, "desc": "Line voltage T-R"},
         
         # Energy - Base Range
         53: {"name": "energy_today_high", "scale": 1, "desc": "Today energy HIGH", "pair": 54},
@@ -400,6 +419,15 @@ SPH_3000_10000 = {
         
         # Temperature
         93: {"name": "inverter_temp", "scale": 0.1, "desc": "Inverter temperature"},
+        94: {"name": "ipm_temp", "scale": 0.1, "desc": "IPM temperature"},
+        95: {"name": "boost_temp", "scale": 0.1, "desc": "Boost temperature"},
+        
+        # Bus Voltages (DC bus)
+        98: {"name": "p_bus_voltage", "scale": 0.1, "desc": "P-bus voltage"},
+        99: {"name": "n_bus_voltage", "scale": 0.1, "desc": "N-bus voltage"},
+        
+        # Power Factor
+        100: {"name": "power_factor", "scale": 1, "desc": "Power factor (0-10000=underexcited, 10001-20000=overexcited)"},
         
         # Diagnostics
         105: {"name": "fault_code", "scale": 1, "desc": "Fault code"},
@@ -456,12 +484,43 @@ SPH_3000_10000 = {
         1063: {"name": "load_energy_total_low", "scale": 1, "desc": "Load total LOW", "combined_scale": 0.1},
     },
     "holding_registers": {
-        3: {"name": "firmware_version", "desc": "Firmware version"},
-        9: {"name": "serial_number_1", "desc": "Serial number part 1"},
-        10: {"name": "serial_number_2", "desc": "Serial number part 2"},
-        11: {"name": "serial_number_3", "desc": "Serial number part 3"},
-        12: {"name": "serial_number_4", "desc": "Serial number part 4"},
-        13: {"name": "serial_number_5", "desc": "Serial number part 5"},
+        # Read-only identification registers
+        3: {"name": "firmware_version", "desc": "Firmware version", "access": "R"},
+        9: {"name": "serial_number_1", "desc": "Serial number part 1", "access": "R"},
+        10: {"name": "serial_number_2", "desc": "Serial number part 2", "access": "R"},
+        11: {"name": "serial_number_3", "desc": "Serial number part 3", "access": "R"},
+        12: {"name": "serial_number_4", "desc": "Serial number part 4", "access": "R"},
+        13: {"name": "serial_number_5", "desc": "Serial number part 5", "access": "R"},
+        
+        # Writable control registers for automations
+        0: {"name": "on_off", "scale": 1, "unit": "", "access": "RW", "desc": "Inverter on/off control (0=Off, 1=On)", "min": 0, "max": 1},
+        3: {"name": "active_power_rate", "scale": 1, "unit": "%", "access": "RW", "desc": "Active power rate limit", "min": 0, "max": 100},
+        30: {"name": "modbus_address", "scale": 1, "unit": "", "access": "RW", "desc": "Modbus slave address", "min": 1, "max": 247},
+        
+        # Battery control settings
+        1044: {"name": "priority_mode", "scale": 1, "unit": "", "access": "RW", "desc": "Priority mode (0=Load First, 1=Battery First, 2=Grid First)", "min": 0, "max": 2},
+        1090: {"name": "ac_charge_enable", "scale": 1, "unit": "", "access": "RW", "desc": "AC charge enable (0=Disable, 1=Enable)", "min": 0, "max": 1},
+        1091: {"name": "ac_charge_start_hour", "scale": 1, "unit": "h", "access": "RW", "desc": "AC charge start hour", "min": 0, "max": 23},
+        1092: {"name": "ac_charge_start_minute", "scale": 1, "unit": "min", "access": "RW", "desc": "AC charge start minute", "min": 0, "max": 59},
+        1093: {"name": "ac_charge_end_hour", "scale": 1, "unit": "h", "access": "RW", "desc": "AC charge end hour", "min": 0, "max": 23},
+        1094: {"name": "ac_charge_end_minute", "scale": 1, "unit": "min", "access": "RW", "desc": "AC charge end minute", "min": 0, "max": 59},
+        1095: {"name": "ac_charge_power", "scale": 1, "unit": "%", "access": "RW", "desc": "AC charge power rate", "min": 0, "max": 100},
+        1096: {"name": "ac_charge_soc_limit", "scale": 1, "unit": "%", "access": "RW", "desc": "AC charge SOC limit", "min": 0, "max": 100},
+        
+        # Battery discharge settings
+        1100: {"name": "battery_discharge_start_hour", "scale": 1, "unit": "h", "access": "RW", "desc": "Battery discharge start hour", "min": 0, "max": 23},
+        1101: {"name": "battery_discharge_start_minute", "scale": 1, "unit": "min", "access": "RW", "desc": "Battery discharge start minute", "min": 0, "max": 59},
+        1102: {"name": "battery_discharge_end_hour", "scale": 1, "unit": "h", "access": "RW", "desc": "Battery discharge end hour", "min": 0, "max": 23},
+        1103: {"name": "battery_discharge_end_minute", "scale": 1, "unit": "min", "access": "RW", "desc": "Battery discharge end minute", "min": 0, "max": 59},
+        1104: {"name": "battery_discharge_power", "scale": 1, "unit": "%", "access": "RW", "desc": "Battery discharge power rate", "min": 0, "max": 100},
+        1105: {"name": "battery_discharge_soc_limit", "scale": 1, "unit": "%", "access": "RW", "desc": "Battery discharge SOC lower limit", "min": 0, "max": 100},
+        
+        # Battery voltage limits
+        1110: {"name": "battery_charge_voltage", "scale": 0.01, "unit": "V", "access": "RW", "desc": "Battery charge voltage", "min": 4000, "max": 6000},
+        1111: {"name": "battery_discharge_voltage", "scale": 0.01, "unit": "V", "access": "RW", "desc": "Battery discharge cutoff voltage", "min": 4000, "max": 6000},
+        
+        # Grid settings
+        1120: {"name": "grid_charge_enable", "scale": 1, "unit": "", "access": "RW", "desc": "Grid charge enable (0=Disable, 1=Enable)", "min": 0, "max": 1},
     },
 }
 
