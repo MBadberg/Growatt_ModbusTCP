@@ -1,7 +1,7 @@
 # Growatt Modbus Integration for Home Assistant ☀️
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.0.4b1-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.0.5-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Growatt_ModbusTCP.svg)](https://github.com/0xAHA/Growatt_ModbusTCP/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/0xAHA/Growatt_ModbusTCP.svg?style=social)](https://github.com/0xAHA/Growatt_ModbusTCP)
 
@@ -470,6 +470,163 @@ sensor.{name}_battery_power  (when negative)
 
 ---
 
+## ⚙️ Writable Settings & Automations (Hybrid Models)
+
+**NEW in v0.0.5!** Hybrid inverter models (SPH, TL-XH, MOD, WIT) now support writable settings that enable powerful Home Assistant automations!
+
+### Available Controls
+
+The integration creates **Number** and **Select** entities for all writable inverter settings:
+
+#### Battery Priority Mode
+- **Entity:** `select.{name}_priority_mode`
+- **Options:** Load First, Battery First, Grid First
+- **Use Case:** Switch between operating modes based on time of day or electricity prices
+
+#### AC Charging Control
+- **Enable/Disable:** `select.{name}_ac_charge_enable`
+- **Time Window:** `number.{name}_ac_charge_start_hour/minute` and `end_hour/minute`
+- **Power Rate:** `number.{name}_ac_charge_power` (0-100%)
+- **SOC Limit:** `number.{name}_ac_charge_soc_limit` (0-100%)
+- **Use Case:** Charge battery from grid during off-peak hours
+
+#### Battery Discharge Control
+- **Time Window:** `number.{name}_battery_discharge_start_hour/minute` and `end_hour/minute`
+- **Power Rate:** `number.{name}_battery_discharge_power` (0-100%)
+- **SOC Limit:** `number.{name}_battery_discharge_soc_limit` (0-100%)
+- **Use Case:** Prevent battery discharge during specific hours
+
+#### Battery Voltage Limits
+- **Charge Voltage:** `number.{name}_battery_charge_voltage` (V)
+- **Discharge Cutoff:** `number.{name}_battery_discharge_voltage` (V)
+- **Use Case:** Extend battery life with conservative voltage limits
+
+#### Grid Charging
+- **Enable/Disable:** `select.{name}_grid_charge_enable`
+- **Use Case:** Allow/prevent charging from grid
+
+### Example Automations
+
+#### Time-of-Use Optimization
+
+```yaml
+# Charge from grid during cheap electricity (00:00-06:00)
+automation:
+  - alias: "Battery: Charge from grid at night"
+    trigger:
+      - platform: time
+        at: "00:00:00"
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.growatt_ac_charge_enable
+        data:
+          option: "Enabled"
+      - service: number.set_value
+        target:
+          entity_id: number.growatt_ac_charge_start_hour
+        data:
+          value: 0
+      - service: number.set_value
+        target:
+          entity_id: number.growatt_ac_charge_end_hour
+        data:
+          value: 6
+      - service: number.set_value
+        target:
+          entity_id: number.growatt_ac_charge_soc_limit
+        data:
+          value: 100
+
+  - alias: "Battery: Stop grid charging at 6am"
+    trigger:
+      - platform: time
+        at: "06:00:00"
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.growatt_ac_charge_enable
+        data:
+          option: "Disabled"
+```
+
+#### Dynamic Priority Based on Solar Production
+
+```yaml
+automation:
+  - alias: "Battery: Load first when sunny"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.growatt_solar_total_power
+        above: 3000  # 3kW
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.growatt_priority_mode
+        data:
+          option: "Load First"
+
+  - alias: "Battery: Battery first when cloudy"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.growatt_solar_total_power
+        below: 1000  # 1kW
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.growatt_priority_mode
+        data:
+          option: "Battery First"
+```
+
+#### Peak Shaving
+
+```yaml
+automation:
+  - alias: "Battery: Limit discharge during peak hours"
+    trigger:
+      - platform: time
+        at: "17:00:00"  # Peak starts
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.growatt_battery_discharge_soc_limit
+        data:
+          value: 30  # Keep 30% reserve
+
+  - alias: "Battery: Full discharge allowed off-peak"
+    trigger:
+      - platform: time
+        at: "21:00:00"  # Peak ends
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.growatt_battery_discharge_soc_limit
+        data:
+          value: 10  # Normal minimum
+```
+
+### Safety Notes
+
+⚠️ **Important:**
+- Changes are written directly to inverter holding registers via Modbus
+- Invalid values are rejected based on min/max limits defined in register map
+- Always verify settings on inverter display after changes
+- Start with conservative values and test thoroughly
+- Some settings may require inverter restart to take effect
+
+### Supported Models
+
+Writable settings are available on:
+- ✅ **SPH 3000-10000** (including SPH 10000 TL3 BH UP)
+- ✅ **TL-XH Series** (single-phase hybrid)
+- ✅ **MOD Series** (three-phase hybrid)
+- ✅ **WIT TL3 Series** (business storage)
+
+Grid-tied models (MIN, MID, MAC, MAX) have limited writable settings (inverter on/off, power rate).
+
+---
+
 ## 🌙 Night-Time Behavior
 
 When the inverter powers down (no sun), the integration handles it gracefully:
@@ -579,7 +736,16 @@ To view device information:
 
 ---
 
-## 🆕 What's New in v0.0.3
+## 🆕 What's New in v0.0.5
+
+- ⚙️ **Writable Settings Support** - Control your hybrid inverter directly from Home Assistant!
+- 🔢 **Number Platform** - Set battery charge/discharge times, power rates, voltage limits
+- 🎛️ **Select Platform** - Change priority mode, enable/disable AC/grid charging
+- 🤖 **Powerful Automations** - Time-of-use optimization, dynamic priority, peak shaving
+- ✅ **SPH 10000 TL3 BH UP** - Fully tested and confirmed working with all features
+- 📝 **Comprehensive Documentation** - Complete automation examples and safety guidelines
+
+### v0.0.3 Features (Previously Released)
 
 - 🎛️ **Expanded Model Support** - Now supports 14 inverter profiles (up from 6)
 - 🔋 **Fixed SPH Register Map** - SPH models now include complete PV, AC, and battery sensors
@@ -587,9 +753,8 @@ To view device information:
 - 🏭 **More Commercial Models** - Added MAC, MAX 1500V, MAX-X LV, WIT TL3 series
 - 💾 **Legacy Storage** - Added MIX and SPA series profiles
 - 📊 **Profile-Based Sensors** - Optimized sensor creation based on inverter capabilities
-- 🐛 **Bug Fixes** - Resolved config flow loading issues and type hint errors
 
-### v0.0.2 Features (Previously Released)
+### v0.0.2 Features
 
 - 🔄 **Invert Grid Power Option** - Fix backwards CT clamp installations via UI toggle
 - 📊 **Model-Specific Sensors** - Only relevant sensors created based on inverter capabilities
