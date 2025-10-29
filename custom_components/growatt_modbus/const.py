@@ -456,12 +456,43 @@ SPH_3000_10000 = {
         1063: {"name": "load_energy_total_low", "scale": 1, "desc": "Load total LOW", "combined_scale": 0.1},
     },
     "holding_registers": {
-        3: {"name": "firmware_version", "desc": "Firmware version"},
-        9: {"name": "serial_number_1", "desc": "Serial number part 1"},
-        10: {"name": "serial_number_2", "desc": "Serial number part 2"},
-        11: {"name": "serial_number_3", "desc": "Serial number part 3"},
-        12: {"name": "serial_number_4", "desc": "Serial number part 4"},
-        13: {"name": "serial_number_5", "desc": "Serial number part 5"},
+        # Read-only identification registers
+        3: {"name": "firmware_version", "desc": "Firmware version", "access": "R"},
+        9: {"name": "serial_number_1", "desc": "Serial number part 1", "access": "R"},
+        10: {"name": "serial_number_2", "desc": "Serial number part 2", "access": "R"},
+        11: {"name": "serial_number_3", "desc": "Serial number part 3", "access": "R"},
+        12: {"name": "serial_number_4", "desc": "Serial number part 4", "access": "R"},
+        13: {"name": "serial_number_5", "desc": "Serial number part 5", "access": "R"},
+        
+        # Writable control registers for automations
+        0: {"name": "on_off", "scale": 1, "unit": "", "access": "RW", "desc": "Inverter on/off control (0=Off, 1=On)", "min": 0, "max": 1},
+        3: {"name": "active_power_rate", "scale": 1, "unit": "%", "access": "RW", "desc": "Active power rate limit", "min": 0, "max": 100},
+        30: {"name": "modbus_address", "scale": 1, "unit": "", "access": "RW", "desc": "Modbus slave address", "min": 1, "max": 247},
+        
+        # Battery control settings
+        1044: {"name": "priority_mode", "scale": 1, "unit": "", "access": "RW", "desc": "Priority mode (0=Load First, 1=Battery First, 2=Grid First)", "min": 0, "max": 2},
+        1090: {"name": "ac_charge_enable", "scale": 1, "unit": "", "access": "RW", "desc": "AC charge enable (0=Disable, 1=Enable)", "min": 0, "max": 1},
+        1091: {"name": "ac_charge_start_hour", "scale": 1, "unit": "h", "access": "RW", "desc": "AC charge start hour", "min": 0, "max": 23},
+        1092: {"name": "ac_charge_start_minute", "scale": 1, "unit": "min", "access": "RW", "desc": "AC charge start minute", "min": 0, "max": 59},
+        1093: {"name": "ac_charge_end_hour", "scale": 1, "unit": "h", "access": "RW", "desc": "AC charge end hour", "min": 0, "max": 23},
+        1094: {"name": "ac_charge_end_minute", "scale": 1, "unit": "min", "access": "RW", "desc": "AC charge end minute", "min": 0, "max": 59},
+        1095: {"name": "ac_charge_power", "scale": 1, "unit": "%", "access": "RW", "desc": "AC charge power rate", "min": 0, "max": 100},
+        1096: {"name": "ac_charge_soc_limit", "scale": 1, "unit": "%", "access": "RW", "desc": "AC charge SOC limit", "min": 0, "max": 100},
+        
+        # Battery discharge settings
+        1100: {"name": "battery_discharge_start_hour", "scale": 1, "unit": "h", "access": "RW", "desc": "Battery discharge start hour", "min": 0, "max": 23},
+        1101: {"name": "battery_discharge_start_minute", "scale": 1, "unit": "min", "access": "RW", "desc": "Battery discharge start minute", "min": 0, "max": 59},
+        1102: {"name": "battery_discharge_end_hour", "scale": 1, "unit": "h", "access": "RW", "desc": "Battery discharge end hour", "min": 0, "max": 23},
+        1103: {"name": "battery_discharge_end_minute", "scale": 1, "unit": "min", "access": "RW", "desc": "Battery discharge end minute", "min": 0, "max": 59},
+        1104: {"name": "battery_discharge_power", "scale": 1, "unit": "%", "access": "RW", "desc": "Battery discharge power rate", "min": 0, "max": 100},
+        1105: {"name": "battery_discharge_soc_limit", "scale": 1, "unit": "%", "access": "RW", "desc": "Battery discharge SOC lower limit", "min": 0, "max": 100},
+        
+        # Battery voltage limits
+        1110: {"name": "battery_charge_voltage", "scale": 0.01, "unit": "V", "access": "RW", "desc": "Battery charge voltage", "min": 4000, "max": 6000},
+        1111: {"name": "battery_discharge_voltage", "scale": 0.01, "unit": "V", "access": "RW", "desc": "Battery discharge cutoff voltage", "min": 4000, "max": 6000},
+        
+        # Grid settings
+        1120: {"name": "grid_charge_enable", "scale": 1, "unit": "", "access": "RW", "desc": "Grid charge enable (0=Disable, 1=Enable)", "min": 0, "max": 1},
     },
 }
 

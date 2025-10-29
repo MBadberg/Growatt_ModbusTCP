@@ -90,6 +90,9 @@ class GrowattModbusCoordinator(DataUpdateCoordinator[GrowattData]):
         self._current_date = datetime.now().date()
         self._inverter_online = False
         
+        # Cache for holding registers (writable settings)
+        self.holding_register_cache = {}
+        
         # Get update interval from options (default 30 seconds)
         scan_interval = entry.options.get("scan_interval", 30)
         
@@ -326,6 +329,8 @@ class GrowattModbusCoordinator(DataUpdateCoordinator[GrowattData]):
         """Perform first refresh and handle setup errors."""
         try:
             await super().async_config_entry_first_refresh()
+            # Load holding registers for number/select entities
+            await self.async_load_holding_registers()
         except UpdateFailed as err:
             _LOGGER.error("Initial setup failed: %s", err)
             raise
@@ -350,3 +355,118 @@ class GrowattModbusCoordinator(DataUpdateCoordinator[GrowattData]):
             "manufacturer": "Growatt",
             "model": "MIN Series",
         }
+    
+    async def async_read_holding_registers(self, start_address: int, count: int) -> dict:
+        """Read holding registers and update cache."""
+        if self._client is None:
+            raise UpdateFailed("Growatt client not initialized")
+        
+        try:
+            # Run in executor
+            result = await self.hass.async_add_executor_job(
+                self._read_holding_registers_sync, start_address, count
+            )
+            return result
+        except Exception as err:
+            _LOGGER.error(f"Error reading holding registers {start_address}: {err}")
+            raise UpdateFailed(f"Error reading holding registers: {err}")
+    
+    def _read_holding_registers_sync(self, start_address: int, count: int) -> dict:
+        """Synchronous read of holding registers."""
+        try:
+            if not self._client.connect():
+                _LOGGER.error("Failed to connect to inverter for reading holding registers")
+                return {}
+            
+            registers = self._client.read_holding_registers(start_address, count)
+            self._client.disconnect()
+            
+            if registers is None:
+                return {}
+            
+            # Update cache
+            result = {}
+            for i, value in enumerate(registers):
+                address = start_address + i
+                self.holding_register_cache[address] = value
+                result[address] = value
+            
+            return result
+        except Exception as err:
+            _LOGGER.error(f"Error reading holding registers: {err}")
+            if self._client:
+                try:
+                    self._client.disconnect()
+                except:
+                    pass
+            return {}
+    
+    async def async_write_holding_register(self, address: int, value: int) -> None:
+        """Write a single holding register."""
+        if self._client is None:
+            raise UpdateFailed("Growatt client not initialized")
+        
+        try:
+            # Run in executor
+            success = await self.hass.async_add_executor_job(
+                self._write_holding_register_sync, address, value
+            )
+            
+            if not success:
+                raise UpdateFailed(f"Failed to write to register {address}")
+            
+            # Update cache
+            self.holding_register_cache[address] = value
+            
+        except Exception as err:
+            _LOGGER.error(f"Error writing holding register {address}: {err}")
+            raise UpdateFailed(f"Error writing register: {err}")
+    
+    def _write_holding_register_sync(self, address: int, value: int) -> bool:
+        """Synchronous write to holding register."""
+        try:
+            if not self._client.connect():
+                _LOGGER.error("Failed to connect to inverter for writing")
+                return False
+            
+            success = self._client.write_holding_register(address, value)
+            self._client.disconnect()
+            
+            return success
+        except Exception as err:
+            _LOGGER.error(f"Error writing holding register: {err}")
+            if self._client:
+                try:
+                    self._client.disconnect()
+                except:
+                    pass
+            return False
+    
+    async def async_load_holding_registers(self) -> None:
+        """Load holding registers into cache on startup."""
+        register_map = self._get_register_map()
+        if register_map not in REGISTER_MAPS:
+            return
+        
+        holding_registers = REGISTER_MAPS[register_map].get("holding_registers", {})
+        
+        # Group consecutive registers for efficient reading
+        if not holding_registers:
+            return
+        
+        addresses = sorted(holding_registers.keys())
+        if not addresses:
+            return
+        
+        # Read in chunks of up to 10 registers
+        chunk_size = 10
+        for i in range(0, len(addresses), chunk_size):
+            chunk_addresses = addresses[i:i + chunk_size]
+            start_addr = chunk_addresses[0]
+            end_addr = chunk_addresses[-1]
+            count = end_addr - start_addr + 1
+            
+            try:
+                await self.async_read_holding_registers(start_addr, count)
+            except Exception as err:
+                _LOGGER.debug(f"Could not read holding registers {start_addr}-{end_addr}: {err}")

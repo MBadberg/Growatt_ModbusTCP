@@ -317,6 +317,92 @@ class GrowattModbus:
         except Exception as e:
             logger.debug(f"Exception reading holding registers (inverter may be offline): {e}")
             return None
+    
+    def write_holding_register(self, address: int, value: int) -> bool:
+        """Write a single holding register with error handling"""
+        self._enforce_read_interval()
+        
+        try:
+            logger.info(f"Writing value {value} to holding register {address}")
+            
+            # Try new parameter name first (device_id for pymodbus 3.x+)
+            try:
+                response = self.client.write_register(
+                    address=address, value=value, device_id=self.slave_id
+                )
+            except TypeError:
+                # Fall back to older parameter name (slave for pymodbus 2.x)
+                try:
+                    response = self.client.write_register(
+                        address=address, value=value, slave=self.slave_id
+                    )
+                except TypeError:
+                    # Very old version - positional arguments only
+                    response = self.client.write_register(
+                        address, value, unit=self.slave_id
+                    )
+            
+            # Handle different pymodbus versions for error checking
+            if hasattr(response, 'isError'):
+                # Old version (2.x)
+                if response.isError():
+                    logger.error(f"Modbus error writing holding register {address}")
+                    return False
+            elif hasattr(response, 'is_error'):
+                # New version (3.x)
+                if response.is_error():
+                    logger.error(f"Modbus error writing holding register {address}")
+                    return False
+            
+            logger.info(f"Successfully wrote value {value} to register {address}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Exception writing holding register {address}: {e}")
+            return False
+    
+    def write_holding_registers(self, start_address: int, values: list) -> bool:
+        """Write multiple holding registers with error handling"""
+        self._enforce_read_interval()
+        
+        try:
+            logger.info(f"Writing {len(values)} values to holding registers starting at {start_address}")
+            
+            # Try new parameter name first (device_id for pymodbus 3.x+)
+            try:
+                response = self.client.write_registers(
+                    address=start_address, values=values, device_id=self.slave_id
+                )
+            except TypeError:
+                # Fall back to older parameter name (slave for pymodbus 2.x)
+                try:
+                    response = self.client.write_registers(
+                        address=start_address, values=values, slave=self.slave_id
+                    )
+                except TypeError:
+                    # Very old version - positional arguments only
+                    response = self.client.write_registers(
+                        start_address, values, unit=self.slave_id
+                    )
+            
+            # Handle different pymodbus versions for error checking
+            if hasattr(response, 'isError'):
+                # Old version (2.x)
+                if response.isError():
+                    logger.error(f"Modbus error writing holding registers {start_address}")
+                    return False
+            elif hasattr(response, 'is_error'):
+                # New version (3.x)
+                if response.is_error():
+                    logger.error(f"Modbus error writing holding registers {start_address}")
+                    return False
+            
+            logger.info(f"Successfully wrote {len(values)} values to registers starting at {start_address}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Exception writing holding registers {start_address}: {e}")
+            return False
 
     def _get_register_value(self, address: int) -> Optional[float]:
         """
